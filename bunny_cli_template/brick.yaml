@@ -1,0 +1,61 @@
+name: bunny_cli_template
+description: A generator for flutter bunny cli.
+version: 0.1.0+1
+
+environment:
+  mason: ">=0.1.0"
+
+vars:
+  project_name:
+    type: string
+    description: The project or app name
+    default: flutter_bunny
+    prompt: What is the project name?
+  org_name:
+    type: string
+    description: The organization name
+    default: com.example
+    prompt: What is the organization name?
+  architecture:
+    type: enum
+    description: The architecture pattern to use
+    default: Clean Architecture
+    values:
+      - Clean Architecture
+      - MVVM
+      - MVC
+      - Feature-Driven
+  state_management:
+    type: enum
+    description: The state management solution to use
+    default: Provider
+    values:
+      - Provider
+      - Riverpod
+      - Bloc
+      - GetX
+      - MobX
+      - Redux
+  features:
+    type: list
+    description: Features to include in the application
+    defaults: 
+      - Authentication
+    values:
+      - Authentication
+      - User Profile
+      - Settings
+      - Dashboard
+      - Products
+      - Shopping Cart
+  modules:
+    type: list
+    description: Additional modules to include
+    defaults:
+      - Network Layer
+    values:
+      - Network Layer
+      - Local Storage
+      - Analytics
+      - Push Notifications
+      - Theme Manager

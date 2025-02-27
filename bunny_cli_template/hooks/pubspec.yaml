@@ -1,0 +1,7 @@
+name: flutter_bunny_cli
+
+environment:
+  sdk: "^3.6.0"
+
+dependencies:
+  mason: ^0.1.0
