@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:mason/mason.dart';
-import 'utils.dart';
+import '../utils.dart';
 
 void createArchitectureStructure(
   HookContext context, 

@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:mason/mason.dart';
 
-import 'utils.dart';
+import '../utils.dart';
 
 void createStateManagementFiles(HookContext context, String projectName,
     String basePath, String featureName, String stateManagement) {

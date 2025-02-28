@@ -1,11 +1,11 @@
 import 'dart:io';
+
 import 'package:mason/mason.dart';
 
 // Import helper files
-import 'architecture_handler.dart';
-import 'feature_generator.dart';
-import 'state_management_handler.dart';
-import 'utils.dart';
+import 'lib/architecture_handler.dart';
+import 'lib/feature_generator.dart';
+import 'lib/utils.dart';
 
 void run(HookContext context) {
   // Validate project name
@@ -18,15 +18,15 @@ void run(HookContext context) {
   // Validate project name
   if (!isValidProjectName(projectName)) {
     throw ArgumentError(
-      'Invalid project name. Must start with a letter or underscore, '
-      'contain only lowercase letters, numbers, and underscores.'
-    );
+        'Invalid project name. Must start with a letter or underscore, '
+        'contain only lowercase letters, numbers, and underscores.');
   }
 
   // Make Authentication the default feature if none are selected
   if (features.isEmpty) {
     features = ['Authentication'];
-    context.logger.info('No features selected, adding default feature: Authentication');
+    context.logger
+        .info('No features selected, adding default feature: Authentication');
   } else if (!features.contains('Authentication')) {
     // Add Authentication if not already included
     features = [...features, 'Authentication'];
@@ -42,13 +42,14 @@ void run(HookContext context) {
 
   // Create project structure
   createProjectStructure(context, projectName);
-  
+
   // Create architecture-specific structure
   createArchitectureStructure(context, projectName, architecture);
-  
+
   // Create feature structures based on architecture and state management
-  createFeatureStructures(context, projectName, features, architecture, stateManagement);
-  
+  createFeatureStructures(
+      context, projectName, features, architecture, stateManagement);
+
   // Create module structures
   createModuleStructures(context, projectName, modules, architecture);
 
@@ -80,12 +81,8 @@ void createProjectStructure(HookContext context, String projectName) {
   }
 }
 
-void createModuleStructures(
-  HookContext context, 
-  String projectName, 
-  List<dynamic> modules,
-  String architecture
-) {
+void createModuleStructures(HookContext context, String projectName,
+    List<dynamic> modules, String architecture) {
   for (final module in modules) {
     final moduleName = module.toString().toLowerCase().replaceAll(' ', '_');
     String baseDir;
@@ -109,13 +106,12 @@ void createModuleStructures(
     if (!directory.existsSync()) {
       directory.createSync(recursive: true);
       context.logger.info('Created module directory: lib/$baseDir/$moduleName');
-      
+
       // Create a base file for the module
       createFile(
-        '$projectName/lib/$baseDir/$moduleName/${moduleName}_service.dart',
-        generateServiceTemplate(moduleName),
-        context
-      );
+          '$projectName/lib/$baseDir/$moduleName/${moduleName}_service.dart',
+          generateServiceTemplate(moduleName),
+          context);
     }
   }
 }
