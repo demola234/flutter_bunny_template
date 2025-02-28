@@ -29,7 +29,7 @@ void run(HookContext context) {
         .info('No features selected, adding default feature: Authentication');
   } else if (!features.contains('Authentication')) {
     // Add Authentication if not already included
-    features = [...features, 'Authentication'];
+    features = [...features];
     context.logger.info('Adding default feature: Authentication');
   }
 

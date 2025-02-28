@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:mason/mason.dart';
-import '../utils.dart';
-import '../state_management_handler.dart';
+import 'utils.dart';
+import 'state_management_handler.dart';
 
 void createFeatureStructures(
   HookContext context, 
