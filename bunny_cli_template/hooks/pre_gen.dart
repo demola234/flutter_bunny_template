@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:flutter_bunny_cli/main_configurator.dart';
+import 'package:flutter_bunny_cli/pubsec_configurator.dart';
 import 'package:mason/mason.dart';
 
 // Import helper files
@@ -11,6 +13,7 @@ void run(HookContext context) {
   // Validate project name
   final projectName = context.vars['project_name'] as String;
   final architecture = context.vars['architecture'] as String;
+  final organizationName = context.vars['org_name'] as String;
   final stateManagement = context.vars['state_management'] as String;
   var features = context.vars['features'] as List<dynamic>;
   final modules = context.vars['modules'] as List<dynamic>;
@@ -50,8 +53,17 @@ void run(HookContext context) {
   createFeatureStructures(
       context, projectName, features, architecture, stateManagement);
 
+  // Configure pubspec.yaml based on project requirements
+
+  configurePubspec(context, projectName, organizationName, architecture,
+      stateManagement, features, modules);
+
   // Create module structures
   createModuleStructures(context, projectName, modules, architecture);
+
+  // Generate main.dart file based on architecture, state management, features, and modules
+  generateMainDart(context, projectName, organizationName, architecture,
+      stateManagement, features, modules);
 
   context.logger.success('Project structure created successfully!');
 }

@@ -1,21 +1,19 @@
 import 'dart:io';
-import 'package:mason/mason.dart';
-import 'utils.dart';
-import 'state_management_handler.dart';
 
-void createFeatureStructures(
-  HookContext context, 
-  String projectName, 
-  List<dynamic> features,
-  String architecture,
-  String stateManagement
-) {
+import 'package:mason/mason.dart';
+
+import 'state_management_handler.dart';
+import 'utils.dart';
+
+void createFeatureStructures(HookContext context, String projectName,
+    List<dynamic> features, String architecture, String stateManagement) {
   for (final feature in features) {
     final featureName = feature.toString().toLowerCase().replaceAll(' ', '_');
-    
+
     switch (architecture) {
       case 'Clean Architecture':
-        createCleanArchitectureFeature(context, projectName, featureName, stateManagement);
+        createCleanArchitectureFeature(
+            context, projectName, featureName, stateManagement);
         break;
       case 'MVVM':
         createMVVMFeature(context, projectName, featureName, stateManagement);
@@ -24,7 +22,8 @@ void createFeatureStructures(
         createMVCFeature(context, projectName, featureName, stateManagement);
         break;
       case 'Feature-Driven':
-        createFeatureDrivenFeature(context, projectName, featureName, stateManagement);
+        createFeatureDrivenFeature(
+            context, projectName, featureName, stateManagement);
         break;
       default:
         context.logger.warn('Unknown architecture: $architecture');
@@ -33,12 +32,8 @@ void createFeatureStructures(
   }
 }
 
-void createCleanArchitectureFeature(
-  HookContext context,
-  String projectName,
-  String featureName,
-  String stateManagement
-) {
+void createCleanArchitectureFeature(HookContext context, String projectName,
+    String featureName, String stateManagement) {
   // Create Clean Architecture structure for the feature
   final baseDirectories = [
     'lib/features/$featureName/domain/entities',
@@ -59,79 +54,62 @@ void createCleanArchitectureFeature(
       context.logger.info('Created feature directory: $dir');
     }
   }
-  
+
   // Create sample entity
   createFile(
-    '$projectName/lib/features/$featureName/domain/entities/${featureName}_entity.dart',
-    generateEntityTemplate(featureName),
-    context
-  );
-  
+      '$projectName/lib/features/$featureName/domain/entities/${featureName}_entity.dart',
+      generateEntityTemplate(featureName),
+      context);
+
   // Create sample repository interface
   createFile(
-    '$projectName/lib/features/$featureName/domain/repositories/${featureName}_repository.dart',
-    generateRepositoryTemplate(featureName),
-    context
-  );
-  
+      '$projectName/lib/features/$featureName/domain/repositories/${featureName}_repository.dart',
+      generateRepositoryTemplate(featureName),
+      context);
+
   // Create sample use case
   createFile(
-    '$projectName/lib/features/$featureName/domain/usecases/${featureName}_usecase.dart',
-    generateUseCaseTemplate(featureName),
-    context
-  );
-  
+      '$projectName/lib/features/$featureName/domain/usecases/${featureName}_usecase.dart',
+      generateUseCaseTemplate(featureName),
+      context);
+
   // Create sample model
   createFile(
-    '$projectName/lib/features/$featureName/data/models/${featureName}_model.dart',
-    generateModelTemplate(featureName),
-    context
-  );
-  
+      '$projectName/lib/features/$featureName/data/models/${featureName}_model.dart',
+      generateModelTemplate(featureName),
+      context);
+
   // Create sample repository implementation
   createFile(
-    '$projectName/lib/features/$featureName/data/repositories/${featureName}_repository_impl.dart',
-    generateRepositoryImplTemplate(featureName),
-    context
-  );
-  
+      '$projectName/lib/features/$featureName/data/repositories/${featureName}_repository_impl.dart',
+      generateRepositoryImplTemplate(featureName),
+      context);
+
   // Create sample data source
   createFile(
-    '$projectName/lib/features/$featureName/data/datasources/${featureName}_data_source.dart',
-    generateDataSourceTemplate(featureName),
-    context
-  );
-  
+      '$projectName/lib/features/$featureName/data/datasources/${featureName}_data_source.dart',
+      generateDataSourceTemplate(featureName),
+      context);
+
   // Create sample page
   createFile(
-    '$projectName/lib/features/$featureName/presentation/pages/${featureName}_page.dart',
-    generatePageTemplate(featureName),
-    context
-  );
-  
+      '$projectName/lib/features/$featureName/presentation/pages/${featureName}_page.dart',
+      generatePageTemplate(featureName),
+      context);
+
   // Create sample widget
   createFile(
-    '$projectName/lib/features/$featureName/presentation/widgets/${featureName}_widget.dart',
-    generateWidgetTemplate(featureName),
-    context
-  );
-  
+      '$projectName/lib/features/$featureName/presentation/widgets/${featureName}_widget.dart',
+      generateWidgetTemplate(featureName),
+      context);
+
   // Create state management files
-  createStateManagementFiles(
-    context, 
-    projectName, 
-    'lib/features/$featureName/presentation',
-    featureName,
-    stateManagement
-  );
+  createStateManagementFiles(context, projectName,
+      'lib/features/$featureName/presentation', featureName, stateManagement);
 }
 
-void createMVVMFeature(
-  HookContext context,
-  String projectName,
-  String featureName,
-  String stateManagement
-) {
+void createMVVMFeature(HookContext context, String projectName,
+    String featureName, String stateManagement) {
   // Create MVVM structure for the feature
   final baseDirectories = [
     'lib/features/$featureName/models',
@@ -148,13 +126,13 @@ void createMVVMFeature(
       context.logger.info('Created feature directory: $dir');
     }
   }
-  
+
   // Create sample model
   createFile(
-    '$projectName/lib/features/$featureName/models/${featureName}_model.dart',
-    '''
+      '$projectName/lib/features/$featureName/models/${featureName}_model.dart',
+      '''
 // ${toClassName(featureName)}Model
-// Generated by Mason
+// Generated by Flutter Bunny Cli🐰
 
 class ${toClassName(featureName)}Model {
   final String id;
@@ -181,15 +159,14 @@ class ${toClassName(featureName)}Model {
   }
 }
 ''',
-    context
-  );
-  
+      context);
+
   // Create sample view
   createFile(
-    '$projectName/lib/features/$featureName/views/${featureName}_view.dart',
-    '''
+      '$projectName/lib/features/$featureName/views/${featureName}_view.dart',
+      '''
 // ${toClassName(featureName)}View
-// Generated by Mason
+// Generated by Flutter Bunny Cli🐰
 import 'package:flutter/material.dart';
 import '../viewmodels/${featureName}_viewmodel.dart';
 
@@ -210,15 +187,14 @@ class ${toClassName(featureName)}View extends StatelessWidget {
   }
 }
 ''',
-    context
-  );
-  
+      context);
+
   // Create sample service
   createFile(
-    '$projectName/lib/features/$featureName/services/${featureName}_service.dart',
-    '''
+      '$projectName/lib/features/$featureName/services/${featureName}_service.dart',
+      '''
 // ${toClassName(featureName)}Service
-// Generated by Mason
+// Generated by Flutter Bunny Cli🐰
 
 class ${toClassName(featureName)}Service {
   // TODO: Implement API calls, database operations, etc.
@@ -232,60 +208,52 @@ class ${toClassName(featureName)}Service {
   }
 }
 ''',
-    context
-  );
-  
+      context);
+
   // Create state management-specific viewmodel
   switch (stateManagement) {
     case 'Provider':
       createFile(
-        '$projectName/lib/features/$featureName/viewmodels/${featureName}_viewmodel.dart',
-        generateProviderViewModel(featureName),
-        context
-      );
+          '$projectName/lib/features/$featureName/viewmodels/${featureName}_viewmodel.dart',
+          generateProviderViewModel(featureName),
+          context);
       break;
     case 'Riverpod':
       createFile(
-        '$projectName/lib/features/$featureName/viewmodels/${featureName}_viewmodel.dart',
-        generateRiverpodViewModel(featureName),
-        context
-      );
+          '$projectName/lib/features/$featureName/viewmodels/${featureName}_viewmodel.dart',
+          generateRiverpodViewModel(featureName),
+          context);
       break;
     case 'BLoC':
-      createBlocFiles(context, projectName, 'lib/features/$featureName/viewmodels', featureName);
+      createBlocFiles(context, projectName,
+          'lib/features/$featureName/viewmodels', featureName);
       break;
     case 'GetX':
       createFile(
-        '$projectName/lib/features/$featureName/viewmodels/${featureName}_viewmodel.dart',
-        generateGetXViewModel(featureName),
-        context
-      );
+          '$projectName/lib/features/$featureName/viewmodels/${featureName}_viewmodel.dart',
+          generateGetXViewModel(featureName),
+          context);
       break;
     case 'MobX':
       createFile(
-        '$projectName/lib/features/$featureName/viewmodels/${featureName}_viewmodel.dart',
-        generateMobXViewModel(featureName),
-        context
-      );
+          '$projectName/lib/features/$featureName/viewmodels/${featureName}_viewmodel.dart',
+          generateMobXViewModel(featureName),
+          context);
       break;
     case 'Redux':
-      createReduxFiles(context, projectName, 'lib/features/$featureName/viewmodels', featureName);
+      createReduxFiles(context, projectName,
+          'lib/features/$featureName/viewmodels', featureName);
       break;
     default:
       createFile(
-        '$projectName/lib/features/$featureName/viewmodels/${featureName}_viewmodel.dart',
-        generateBasicViewModel(featureName),
-        context
-      );
+          '$projectName/lib/features/$featureName/viewmodels/${featureName}_viewmodel.dart',
+          generateBasicViewModel(featureName),
+          context);
   }
 }
 
-void createMVCFeature(
-  HookContext context,
-  String projectName,
-  String featureName,
-  String stateManagement
-) {
+void createMVCFeature(HookContext context, String projectName,
+    String featureName, String stateManagement) {
   // Create MVC structure for the feature
   final baseDirectories = [
     'lib/features/$featureName/models',
@@ -302,13 +270,13 @@ void createMVCFeature(
       context.logger.info('Created feature directory: $dir');
     }
   }
-  
+
   // Create sample model
   createFile(
-    '$projectName/lib/features/$featureName/models/${featureName}_model.dart',
-    '''
+      '$projectName/lib/features/$featureName/models/${featureName}_model.dart',
+      '''
 // ${toClassName(featureName)}Model
-// Generated by Mason
+// Generated by Flutter Bunny Cli🐰
 
 class ${toClassName(featureName)}Model {
   final String id;
@@ -335,15 +303,14 @@ class ${toClassName(featureName)}Model {
   }
 }
 ''',
-    context
-  );
-  
+      context);
+
   // Create sample view
   createFile(
-    '$projectName/lib/features/$featureName/views/${featureName}_view.dart',
-    '''
+      '$projectName/lib/features/$featureName/views/${featureName}_view.dart',
+      '''
 // ${toClassName(featureName)}View
-// Generated by Mason
+// Generated by Flutter Bunny Cli🐰
 import 'package:flutter/material.dart';
 import '../controllers/${featureName}_controller.dart';
 
@@ -364,15 +331,14 @@ class ${toClassName(featureName)}View extends StatelessWidget {
   }
 }
 ''',
-    context
-  );
-  
+      context);
+
   // Create sample service
   createFile(
-    '$projectName/lib/features/$featureName/services/${featureName}_service.dart',
-    '''
+      '$projectName/lib/features/$featureName/services/${featureName}_service.dart',
+      '''
 // ${toClassName(featureName)}Service
-// Generated by Mason
+// Generated by Flutter Bunny Cli🐰
 
 class ${toClassName(featureName)}Service {
   // TODO: Implement API calls, database operations, etc.
@@ -386,60 +352,52 @@ class ${toClassName(featureName)}Service {
   }
 }
 ''',
-    context
-  );
-  
+      context);
+
   // Create state management-specific controller
   switch (stateManagement) {
     case 'Provider':
       createFile(
-        '$projectName/lib/features/$featureName/controllers/${featureName}_controller.dart',
-        generateProviderController(featureName),
-        context
-      );
+          '$projectName/lib/features/$featureName/controllers/${featureName}_controller.dart',
+          generateProviderController(featureName),
+          context);
       break;
     case 'Riverpod':
       createFile(
-        '$projectName/lib/features/$featureName/controllers/${featureName}_controller.dart',
-        generateRiverpodController(featureName),
-        context
-      );
+          '$projectName/lib/features/$featureName/controllers/${featureName}_controller.dart',
+          generateRiverpodController(featureName),
+          context);
       break;
     case 'BLoC':
-      createBlocFiles(context, projectName, 'lib/features/$featureName/controllers', featureName);
+      createBlocFiles(context, projectName,
+          'lib/features/$featureName/controllers', featureName);
       break;
     case 'GetX':
       createFile(
-        '$projectName/lib/features/$featureName/controllers/${featureName}_controller.dart',
-        generateGetXController(featureName),
-        context
-      );
+          '$projectName/lib/features/$featureName/controllers/${featureName}_controller.dart',
+          generateGetXController(featureName),
+          context);
       break;
     case 'MobX':
       createFile(
-        '$projectName/lib/features/$featureName/controllers/${featureName}_controller.dart',
-        generateMobXController(featureName),
-        context
-      );
+          '$projectName/lib/features/$featureName/controllers/${featureName}_controller.dart',
+          generateMobXController(featureName),
+          context);
       break;
     case 'Redux':
-      createReduxFiles(context, projectName, 'lib/features/$featureName/controllers', featureName);
+      createReduxFiles(context, projectName,
+          'lib/features/$featureName/controllers', featureName);
       break;
     default:
       createFile(
-        '$projectName/lib/features/$featureName/controllers/${featureName}_controller.dart',
-        generateBasicController(featureName),
-        context
-      );
+          '$projectName/lib/features/$featureName/controllers/${featureName}_controller.dart',
+          generateBasicController(featureName),
+          context);
   }
 }
 
-void createFeatureDrivenFeature(
-  HookContext context,
-  String projectName,
-  String featureName,
-  String stateManagement
-) {
+void createFeatureDrivenFeature(HookContext context, String projectName,
+    String featureName, String stateManagement) {
   // Create Feature-Driven structure for the feature
   final baseDirectories = [
     'lib/features/$featureName/domain/entities',
@@ -460,69 +418,56 @@ void createFeatureDrivenFeature(
       context.logger.info('Created feature directory: $dir');
     }
   }
-  
+
   // Create sample entity
   createFile(
-    '$projectName/lib/features/$featureName/domain/entities/${featureName}_entity.dart',
-    generateEntityTemplate(featureName),
-    context
-  );
-  
+      '$projectName/lib/features/$featureName/domain/entities/${featureName}_entity.dart',
+      generateEntityTemplate(featureName),
+      context);
+
   // Create sample repository interface
   createFile(
-    '$projectName/lib/features/$featureName/domain/repositories/${featureName}_repository.dart',
-    generateRepositoryTemplate(featureName),
-    context
-  );
-  
+      '$projectName/lib/features/$featureName/domain/repositories/${featureName}_repository.dart',
+      generateRepositoryTemplate(featureName),
+      context);
+
   // Create sample use case
   createFile(
-    '$projectName/lib/features/$featureName/domain/usecases/${featureName}_usecase.dart',
-    generateUseCaseTemplate(featureName),
-    context
-  );
-  
+      '$projectName/lib/features/$featureName/domain/usecases/${featureName}_usecase.dart',
+      generateUseCaseTemplate(featureName),
+      context);
+
   // Create sample model
   createFile(
-    '$projectName/lib/features/$featureName/data/models/${featureName}_model.dart',
-    generateModelTemplate(featureName),
-    context
-  );
-  
+      '$projectName/lib/features/$featureName/data/models/${featureName}_model.dart',
+      generateModelTemplate(featureName),
+      context);
+
   // Create sample repository implementation
   createFile(
-    '$projectName/lib/features/$featureName/data/repositories/${featureName}_repository_impl.dart',
-    generateRepositoryImplTemplate(featureName),
-    context
-  );
-  
+      '$projectName/lib/features/$featureName/data/repositories/${featureName}_repository_impl.dart',
+      generateRepositoryImplTemplate(featureName),
+      context);
+
   // Create sample data source
   createFile(
-    '$projectName/lib/features/$featureName/data/datasources/${featureName}_data_source.dart',
-    generateDataSourceTemplate(featureName),
-    context
-  );
-  
+      '$projectName/lib/features/$featureName/data/datasources/${featureName}_data_source.dart',
+      generateDataSourceTemplate(featureName),
+      context);
+
   // Create sample page
   createFile(
-    '$projectName/lib/features/$featureName/presentation/pages/${featureName}_page.dart',
-    generatePageTemplate(featureName),
-    context
-  );
-  
+      '$projectName/lib/features/$featureName/presentation/pages/${featureName}_page.dart',
+      generatePageTemplate(featureName),
+      context);
+
   // Create sample widget
   createFile(
-    '$projectName/lib/features/$featureName/presentation/widgets/${featureName}_widget.dart',
-    generateWidgetTemplate(featureName),
-    context
-  );
-  
+      '$projectName/lib/features/$featureName/presentation/widgets/${featureName}_widget.dart',
+      generateWidgetTemplate(featureName),
+      context);
+
   // Create state management files
-  createStateManagementFiles(
-    context, 
-    projectName, 
-    'lib/features/$featureName/presentation',
-    featureName,
-    stateManagement
-  );
+  createStateManagementFiles(context, projectName,
+      'lib/features/$featureName/presentation', featureName, stateManagement);
 }
