@@ -24,7 +24,7 @@ vars:
       - Clean Architecture
       - MVVM
       - MVC
-      - Feature-Driven
+      # - Feature-Driven
   state_management:
     type: enum
     description: The state management solution to use
@@ -46,8 +46,8 @@ vars:
       - User Profile
       - Settings
       - Dashboard
-      - Products
-      - Shopping Cart
+      # - Products
+      # - Shopping Cart
   modules:
     type: list
     description: Additional modules to include

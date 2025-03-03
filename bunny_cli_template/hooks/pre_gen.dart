@@ -1,7 +1,12 @@
 import 'dart:io';
 
+import 'package:flutter_bunny_cli/error_generator.dart';
+import 'package:flutter_bunny_cli/localization_generator.dart';
 import 'package:flutter_bunny_cli/main_configurator.dart';
 import 'package:flutter_bunny_cli/pubsec_configurator.dart';
+import 'package:flutter_bunny_cli/push_notification_generator.dart';
+import 'package:flutter_bunny_cli/state_management_observablity.dart';
+import 'package:flutter_bunny_cli/theme_manager_generator.dart';
 import 'package:mason/mason.dart';
 
 // Import helper files
@@ -58,12 +63,27 @@ void run(HookContext context) {
   configurePubspec(context, projectName, organizationName, architecture,
       stateManagement, features, modules);
 
+  // Setup state management observability
+  setupObservability(context, projectName, stateManagement);
+
+  // Setup theme system if Theme Manager is selected
+  generateThemeSystem(context, projectName, modules);
+
   // Create module structures
   createModuleStructures(context, projectName, modules, architecture);
 
   // Generate main.dart file based on architecture, state management, features, and modules
   generateMainDart(context, projectName, organizationName, architecture,
       stateManagement, features, modules);
+
+  // Setup push notification system if Notifications is selected
+  generatePushNotificationSystem(context, projectName, modules);
+
+  // Generate error handling system
+  generateErrorHandling(context, projectName, architecture);
+
+  // Generate localization system if selected
+  generateLocalizationSystem(context, projectName, modules);
 
   context.logger.success('Project structure created successfully!');
 }

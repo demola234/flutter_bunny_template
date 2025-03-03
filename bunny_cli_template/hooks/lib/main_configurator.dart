@@ -14,7 +14,7 @@ void generateMainDart(
     List<dynamic> modules) {
   final mainFile = File('$projectName/lib/main.dart');
   String mainContent = '';
-  
+
   // Start with imports based on architecture and state management
   mainContent = '''
 import 'package:flutter/material.dart';
@@ -111,31 +111,6 @@ import 'package:$projectName/firebase_options.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 ''';
-
-  // Add initialization code based on modules
-  if (modules.contains('Localization')) {
-    mainContent += '''
-  await EasyLocalization.ensureInitialized();
-''';
-  }
-
-  if (features.contains('Authentication')) {
-    mainContent += '''
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-''';
-  }
-
-  if (modules.contains('Local Storage')) {
-    mainContent += '''
-  final appDocumentDirectory = await path_provider.getApplicationDocumentsDirectory();
-  await Hive.initFlutter(appDocumentDirectory.path);
-  
-  // Register your Hive adapters here
-  // Hive.registerAdapter(YourModelAdapter());
-''';
-  }
 
   if (architecture == 'Clean Architecture') {
     mainContent += '''
@@ -251,51 +226,6 @@ void main() async {
   // Close main function
   mainContent += '''}
 ''';
-
-  // Add BLoC observer if BLoC is selected
-  if (stateManagement == 'Bloc') {
-    mainContent += '''
-
-/// Custom BLoC observer for logging BLoC events and transitions
-class AppBlocObserver extends BlocObserver {
-  @override
-  void onCreate(BlocBase bloc) {
-    super.onCreate(bloc);
-    debugPrint('onCreate -- bloc: \${bloc.runtimeType}');
-  }
-
-  @override
-  void onEvent(Bloc bloc, Object? event) {
-    super.onEvent(bloc, event);
-    debugPrint('onEvent -- bloc: \${bloc.runtimeType}, event: \$event');
-  }
-
-  @override
-  void onChange(BlocBase bloc, Change change) {
-    super.onChange(bloc, change);
-    debugPrint('onChange -- bloc: \${bloc.runtimeType}, change: \$change');
-  }
-
-  @override
-  void onTransition(Bloc bloc, Transition transition) {
-    super.onTransition(bloc, transition);
-    debugPrint('onTransition -- bloc: \${bloc.runtimeType}, transition: \$transition');
-  }
-
-  @override
-  void onError(BlocBase bloc, Object error, StackTrace stackTrace) {
-    debugPrint('onError -- bloc: \${bloc.runtimeType}, error: \$error');
-    super.onError(bloc, error, stackTrace);
-  }
-
-  @override
-  void onClose(BlocBase bloc) {
-    super.onClose(bloc);
-    debugPrint('onClose -- bloc: \${bloc.runtimeType}');
-  }
-}
-''';
-  }
 
   // Create parent directory if it doesn't exist
   final libDirectory = Directory('$projectName/lib');

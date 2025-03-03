@@ -23,7 +23,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: ^3.6.0
 
 dependencies:
   flutter:
@@ -33,16 +33,15 @@ dependencies:
 
   # Core packages
   cupertino_icons: ^1.0.6
-  intl: ^0.18.1
+  intl: any
   equatable: ^2.0.5
   path_provider: ^2.1.1
-  http: ^1.1.0
-  shared_preferences: ^2.2.1
+  shared_preferences: ^2.5.2
   flutter_secure_storage: ^9.0.0
   cached_network_image: ^3.3.0
   url_launcher: ^6.1.14
-  connectivity_plus: ^5.0.1
-  flutter_svg: ^2.0.7
+  connectivity_plus: ^6.0.0
+  flutter_svg: ^2.0.9
   flutter_dotenv: ^5.1.0
   json_annotation: ^4.8.1
   freezed_annotation: ^2.4.1
@@ -52,12 +51,12 @@ dependencies:
 ''';
 
   // Add state management dependencies
-  if (stateManagement == 'Bloc') {
+  if (stateManagement == 'Bloc' || stateManagement == 'BLoC') {
     pubspecContent += '''
   # BLoC state management
   flutter_bloc: ^8.1.3
   bloc: ^8.1.2
-  hydrated_bloc: ^9.1.2
+  hydrated_bloc: ^8.0.0
 ''';
   } else if (stateManagement == 'Provider') {
     pubspecContent += '''
@@ -67,18 +66,17 @@ dependencies:
   } else if (stateManagement == 'Riverpod') {
     pubspecContent += '''
   # Riverpod state management
-  flutter_riverpod: ^2.4.0
-  riverpod_annotation: ^2.1.5
+  flutter_riverpod: ^2.6.1
 ''';
   } else if (stateManagement == 'GetX') {
     pubspecContent += '''
   # GetX state management
-  get: ^4.6.5
+  get: ^4.7.2
 ''';
   } else if (stateManagement == 'MobX') {
     pubspecContent += '''
   # MobX state management
-  mobx: ^2.2.0
+  mobx: ^2.5.0
   flutter_mobx: ^2.1.0
 ''';
   } else if (stateManagement == 'Redux') {
@@ -113,21 +111,21 @@ dependencies:
   }
 
   // Add features-specific dependencies
-  if (features.contains('Authentication')) {
-    pubspecContent += '''
-  # Authentication dependencies
-  firebase_auth: ^4.10.0
-  google_sign_in: ^6.1.5
-  sign_in_with_apple: ^5.0.0
-  jwt_decoder: ^2.0.1
-''';
-  }
+//   if (features.contains('Authentication')) {
+//     pubspecContent += '''
+//   # Authentication dependencies
+//   firebase_auth: ^4.10.0
+//   google_sign_in: ^6.1.5
+//   sign_in_with_apple: ^5.0.0
+//   jwt_decoder: ^2.0.1
+// ''';
+//   }
 
   if (features.contains('User Profile')) {
     pubspecContent += '''
   # User Profile dependencies
   image_picker: ^1.0.4
-  image_cropper: ^5.0.0
+  image_cropper: ^5.0.1
 ''';
   }
 
@@ -144,7 +142,7 @@ dependencies:
     pubspecContent += '''
   # Network layer dependencies
   retrofit: ^4.0.3
-  internet_connection_checker: ^1.0.0+1
+  internet_connection_checker: ^3.0.1
 ''';
   }
 
@@ -153,7 +151,6 @@ dependencies:
   # Local storage dependencies
   hive: ^2.2.3
   hive_flutter: ^1.1.0
-  path_provider: ^2.1.1
 ''';
   }
 
@@ -161,19 +158,17 @@ dependencies:
     pubspecContent += '''
   # Localization dependencies
   easy_localization: ^3.0.3
-  flutter_localizations:
-    sdk: flutter
 ''';
   }
 
-  if (modules.contains('Theme Manager')) {
-    pubspecContent += '''
-  # Theme Manager dependencies
-  flex_color_scheme: ^7.3.1
-  google_fonts: ^6.1.0
-  dynamic_color: ^1.6.8
-''';
-  }
+//   if (modules.contains('Theme Manager')) {
+//     pubspecContent += '''
+//   # Theme Manager dependencies
+//   flex_color_scheme: ^7.3.1
+//   google_fonts: ^6.1.0
+//   dynamic_color: ^1.6.8
+// ''';
+//   }
 
   // Add dev dependencies
   pubspecContent += '''
@@ -183,14 +178,13 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^3.0.0
   build_runner: ^2.4.6
-  flutter_gen_runner: ^5.3.1
+  flutter_gen_runner: ^5.3.2
   flutter_launcher_icons: ^0.13.1
-  dart_code_metrics: ^5.7.6
-  mocktail: ^1.0.1
+  source_gen: ^1.4.0
 ''';
 
   // Add state management-specific dev dependencies
-  if (stateManagement == 'Bloc') {
+  if (stateManagement == 'Bloc' || stateManagement == 'BLoC') {
     pubspecContent += '''
   bloc_test: ^9.1.4
 ''';
@@ -200,21 +194,21 @@ dev_dependencies:
 ''';
   } else if (stateManagement == 'MobX') {
     pubspecContent += '''
-  mobx_codegen: ^2.4.0
+  mobx_codegen: ^2.7.0
 ''';
   }
 
   // Add feature-specific dev dependencies
   pubspecContent += '''
   json_serializable: ^6.7.1
-  freezed: ^2.4.2
+  freezed: ^2.4.5
 ''';
 
-  if (modules.contains('Network Layer')) {
-    pubspecContent += '''
-  retrofit_generator: ^8.0.1
-''';
-  }
+//   if (modules.contains('Network Layer')) {
+//     pubspecContent += '''
+//   retrofit_generator: ^8.0.1
+// ''';
+//   }
 
   if (modules.contains('Local Storage')) {
     pubspecContent += '''
@@ -226,11 +220,12 @@ dev_dependencies:
     pubspecContent += '''
   injectable_generator: ^2.4.0
 ''';
-  } else if (architecture == 'MVVM') {
-    pubspecContent += '''
-  stacked_generator: ^1.5.1
-''';
-  }
+  } 
+//   else if (architecture == 'MVVM') {
+//     pubspecContent += '''
+//   stacked_generator: ^1.5.1
+// ''';
+//   }
 
   // Add Flutter configuration
   pubspecContent += '''
@@ -242,6 +237,9 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/icons/
+    - assets/jsons/
+    - assets/gif/
 ''';
 
   // Add conditional assets based on features and modules
