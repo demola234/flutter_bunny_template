@@ -18,27 +18,14 @@ void generateMainDart(
   // Start with imports based on architecture and state management
   mainContent = '''
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'core/utils/state_management_observability.dart';
 import 'dart:async';
 ''';
-
-  // Add imports based on modules
-  if (modules.contains('Localization')) {
-    mainContent += '''
-import 'package:easy_localization/easy_localization.dart';
-''';
-  }
-
-  if (modules.contains('Local Storage')) {
-    mainContent += '''
-import 'package:hive_flutter/hive_flutter.dart';
-import 'package:path_provider/path_provider.dart' as path_provider;
-''';
-  }
 
   if (modules.contains('Theme Manager')) {
     mainContent += '''
 import 'package:flutter/services.dart';
-import 'package:dynamic_color/dynamic_color.dart';
 ''';
   }
 
@@ -75,7 +62,6 @@ import 'package:redux/redux.dart';
   if (architecture == 'Clean Architecture') {
     mainContent += '''
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:$projectName/core/di/injection.dart';
 ''';
   } else if (architecture == 'MVVM') {
     mainContent += '''
@@ -98,13 +84,6 @@ import 'package:$projectName/app/app.dart';
 ''';
   }
 
-  if (features.contains('Authentication')) {
-    mainContent += '''
-import 'package:firebase_core/firebase_core.dart';
-import 'package:$projectName/firebase_options.dart';
-''';
-  }
-
   // Main function declaration
   mainContent += '''
 
@@ -115,7 +94,6 @@ void main() async {
   if (architecture == 'Clean Architecture') {
     mainContent += '''
   await dotenv.load(fileName: ".env");
-  await configureDependencies();
 ''';
   } else if (architecture == 'MVVM') {
     mainContent += '''
@@ -126,10 +104,7 @@ void main() async {
   // Setup state management initialization
   if (stateManagement == 'Bloc') {
     mainContent += '''
-  HydratedBloc.storage = await HydratedStorage.build(
-    storageDirectory: await path_provider.getApplicationDocumentsDirectory(),
-  );
-  
+
   Bloc.observer = AppBlocObserver();
 ''';
   }

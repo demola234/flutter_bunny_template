@@ -2,7 +2,7 @@ echo "|Create DeepLink Android|"
 adb shell am start -a android.intent.action.VIEW \
     -c android.intent.category.BROWSABLE \
     -d "http://{{host_url}}" \
-    {{org_name}}
+    {{bundle_identifier}}
 
 
 echo "|Create DeepLink IOS|"

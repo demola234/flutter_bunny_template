@@ -1,8 +1,10 @@
 import 'dart:io';
 
+import 'package:flutter_bunny_cli/app_generator.dart';
 import 'package:flutter_bunny_cli/error_generator.dart';
 import 'package:flutter_bunny_cli/localization_generator.dart';
 import 'package:flutter_bunny_cli/main_configurator.dart';
+import 'package:flutter_bunny_cli/network_layer_generator.dart';
 import 'package:flutter_bunny_cli/pubsec_configurator.dart';
 import 'package:flutter_bunny_cli/push_notification_generator.dart';
 import 'package:flutter_bunny_cli/state_management_observablity.dart';
@@ -18,7 +20,7 @@ void run(HookContext context) {
   // Validate project name
   final projectName = context.vars['project_name'] as String;
   final architecture = context.vars['architecture'] as String;
-  final organizationName = context.vars['org_name'] as String;
+  final organizationName = context.vars['bundle_identifier'] as String;
   final stateManagement = context.vars['state_management'] as String;
   var features = context.vars['features'] as List<dynamic>;
   final modules = context.vars['modules'] as List<dynamic>;
@@ -48,8 +50,16 @@ void run(HookContext context) {
   context.logger.info('Features: $features');
   context.logger.info('Modules: $modules');
 
+  context.vars['application_id_android'] =
+      _appId(context, platform: Platform.android);
+  context.vars['application_id_ios'] = _appId(context, platform: Platform.ios);
+
   // Create project structure
   createProjectStructure(context, projectName);
+
+  // Generate app widget based on selected features
+  generateAppWidget(
+      context, projectName, architecture, stateManagement, features, modules);
 
   // Create architecture-specific structure
   createArchitectureStructure(context, projectName, architecture);
@@ -68,6 +78,9 @@ void run(HookContext context) {
 
   // Setup theme system if Theme Manager is selected
   generateThemeSystem(context, projectName, modules);
+
+  // Setup network module if Network Module is selected
+  generateNetworkLayerService(context, projectName, modules);
 
   // Create module structures
   createModuleStructures(context, projectName, modules, architecture);
@@ -94,14 +107,35 @@ void main(List<String> args) {
   print('Mason pre-generation hook');
 }
 
+enum Platform {
+  android,
+  ios,
+}
+
+String _appId(HookContext context, {Platform? platform}) {
+  final applicationId = context.vars['bundle_identifier'] as String?;
+  if (applicationId == null) {
+    return '';
+  }
+  // Convert to a valid Android application ID
+  if (platform == Platform.android) {
+    return applicationId.replaceAll('.', '_').toLowerCase();
+  }
+
+  // Convert to a valid iOS application ID
+  if (platform == Platform.ios) {
+    return applicationId.replaceAll('.', '').toLowerCase();
+  }
+
+  return applicationId;
+}
+
 void createProjectStructure(HookContext context, String projectName) {
   final directories = [
     'lib',
     'test',
     'assets',
     'assets/images',
-    'assets/fonts',
-    'assets/translations',
   ];
 
   for (final dir in directories) {

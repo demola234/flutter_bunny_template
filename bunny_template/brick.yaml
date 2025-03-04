@@ -11,7 +11,7 @@ vars:
     description: The project or app name
     default: flutter_bunny
     prompt: What is the project name?
-  org_name:
+  bundle_identifier:
     type: string
     description: The organization name
     default: com.example
@@ -23,7 +23,7 @@ vars:
     prompt: What is the host URL for the API?
   application_id:
     type: string
-    description: The application id on Android, Bundle ID on iOS and company name on Windows. If omitted value will be formed by org_name + . + project_name.
+    description: The application id on Android, Bundle ID on iOS and company name on Windows. If omitted value will be formed by bundle_identifier + . + project_name.
     prompt: What is the application id?
   description:
     type: string

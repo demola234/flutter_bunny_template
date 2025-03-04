@@ -77,7 +77,7 @@ final bunnyCliTemplateBundle = MasonBundle.fromJson(<String, dynamic>{
       "default": "flutter_bunny",
       "prompt": "What is the project name?"
     },
-    "org_name": {
+    "bundle_identifier": {
       "type": "string",
       "description": "The organization name",
       "default": "com.example",

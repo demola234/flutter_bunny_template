@@ -11,11 +11,11 @@ vars:
     description: The project or app name
     default: flutter_bunny
     prompt: What is the project name?
-  org_name:
+  bundle_identifier:
     type: string
-    description: The organization name
-    default: com.example
-    prompt: What is the organization name?
+    description: The bundle identifier
+    default: com.example.app
+    prompt: What is the bundle identifier?
   architecture:
     type: enum
     description: The architecture pattern to use
@@ -39,7 +39,7 @@ vars:
   features:
     type: list
     description: Features to include in the application
-    defaults: 
+    defaults:
       - Authentication
     values:
       - Authentication

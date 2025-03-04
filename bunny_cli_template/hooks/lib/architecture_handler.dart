@@ -13,9 +13,7 @@ void createArchitectureStructure(
       directories = [
         'lib/core',
         'lib/core/error',
-        'lib/core/network',
         'lib/core/utils',
-        'lib/core/theme',
         'lib/infrastructure/injector',
         'lib/infrastructure/navigation',
       ];

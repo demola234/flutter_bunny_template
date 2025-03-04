@@ -110,17 +110,6 @@ dependencies:
 ''';
   }
 
-  // Add features-specific dependencies
-//   if (features.contains('Authentication')) {
-//     pubspecContent += '''
-//   # Authentication dependencies
-//   firebase_auth: ^4.10.0
-//   google_sign_in: ^6.1.5
-//   sign_in_with_apple: ^5.0.0
-//   jwt_decoder: ^2.0.1
-// ''';
-//   }
-
   if (features.contains('User Profile')) {
     pubspecContent += '''
   # User Profile dependencies
@@ -136,39 +125,6 @@ dependencies:
   infinite_scroll_pagination: ^4.0.0
 ''';
   }
-
-  // Add modules-specific dependencies
-  if (modules.contains('Network Layer')) {
-    pubspecContent += '''
-  # Network layer dependencies
-  retrofit: ^4.0.3
-  internet_connection_checker: ^3.0.1
-''';
-  }
-
-  if (modules.contains('Local Storage')) {
-    pubspecContent += '''
-  # Local storage dependencies
-  hive: ^2.2.3
-  hive_flutter: ^1.1.0
-''';
-  }
-
-  if (modules.contains('Localization')) {
-    pubspecContent += '''
-  # Localization dependencies
-  easy_localization: ^3.0.3
-''';
-  }
-
-//   if (modules.contains('Theme Manager')) {
-//     pubspecContent += '''
-//   # Theme Manager dependencies
-//   flex_color_scheme: ^7.3.1
-//   google_fonts: ^6.1.0
-//   dynamic_color: ^1.6.8
-// ''';
-//   }
 
   // Add dev dependencies
   pubspecContent += '''
@@ -220,7 +176,7 @@ dev_dependencies:
     pubspecContent += '''
   injectable_generator: ^2.4.0
 ''';
-  } 
+  }
 //   else if (architecture == 'MVVM') {
 //     pubspecContent += '''
 //   stacked_generator: ^1.5.1

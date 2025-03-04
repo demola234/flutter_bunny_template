@@ -5,34 +5,42 @@ A new Flutter project created with Bunny CLI.
 ## Project Configuration
 
 ### Basic Info
+
 - Project Name: {{project_name}}
-- Organization: {{org_name}}
+- Organization: {{bundle_identifier}}
 
 ### Architecture
+
 Selected Architecture: {{architecture}}
 
 Architecture Details:
 {{architectureDetails}}
 
 ### State Management
+
 Selected State Management: {{state_management}}
 
 State Management Details:
 {{stateManagementDetails}}
 
 ### Selected Features
+
 Features included in this project:
 {{#features}}
+
 - {{.}}
-{{/features}}
+  {{/features}}
 
 ### Selected Modules
+
 Modules included in this project:
 {{#modules}}
+
 - {{.}}
-{{/modules}}
+  {{/modules}}
 
 ## Project Structure
+
 ```
 lib/
 ├── core/
@@ -64,18 +72,21 @@ lib/
 ## Development Guidelines
 
 ### Code Style
+
 - Follow Flutter's official style guide
 - Use meaningful variable and function names
 - Write comments for complex logic
 - Keep files and classes focused and small
 
 ### Architecture Guidelines
+
 - Follow the {{architecture}} pattern
 - Maintain separation of concerns
 - Write unit tests for business logic
 - Document complex implementations
 
 ### State Management
+
 - Use {{state_management}} for state management
 - Follow best practices for chosen solution
 - Maintain clear state update patterns

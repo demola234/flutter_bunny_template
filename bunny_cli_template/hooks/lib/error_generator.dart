@@ -27,9 +27,9 @@ void generateErrorHandling(
   _generateErrorMapperFile(context, projectName);
 
   // Generate additional architecture-specific files if needed
-  if (architecture == 'Clean Architecture') {
-    _generateEitherExtensionsFile(context, projectName);
-  }
+  // if (architecture == 'Clean Architecture') {
+  //   _generateEitherExtensionsFile(context, projectName);
+  // }
 
   context.logger.success('Error handling system generated successfully!');
 }
@@ -240,7 +240,7 @@ class ErrorMapper {
     } else if (exception is ValidationException) {
       return ValidationFailure(
         message: message,
-        fieldErrors: (exception as ValidationException).fieldErrors,
+        fieldErrors: (exception).fieldErrors,
       );
     } else if (exception is NotFoundException) {
       return NotFoundFailure(message: message);
