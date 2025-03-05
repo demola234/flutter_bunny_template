@@ -25,7 +25,7 @@ void generateAppWidget(
 
   // Generate app_router.dart if needed based on architecture
   if (architecture == 'Feature-Driven' || modules.contains('Routing')) {
-    _generateAppRouterFile(context, projectName, features);
+    _generateAppRouterFile(context, projectName, features, architecture);
   }
 
   // Generate app_module.dart for Feature-Driven architecture
@@ -74,9 +74,28 @@ void _generateAppDartFile(
   String homePage = 'const Scaffold(body: Center(child: Text(\'Welcome\')))';
 
   if (features.contains('Authentication')) {
-    homePageImport =
-        "import 'package:$projectName/features/authentication/presentation/pages/authentication_page.dart';";
-    homePage = 'const AuthenticationPage()';
+    if (architecture == 'MVVM') {
+      homePageImport =
+          "import 'package:$projectName/features/authentication/views/authentication_view.dart';";
+    } else if (architecture == 'MVC') {
+      homePageImport =
+          "import 'package:$projectName/features/authentication/views/authentication_view.dart';";
+    } else if (architecture == 'Clean Architecture') {
+      homePageImport =
+          "import 'package:$projectName/features/authentication/presentation/pages/authentication_page.dart';";
+    } else {
+      homePageImport =
+          "import 'package:$projectName/features/authentication/presentation/pages/authentication_page.dart';";
+    }
+    if (architecture == 'MVVM') {
+      homePage = 'const AuthenticationView()';
+    } else if (architecture == 'MVC') {
+      homePage = 'const AuthenticationView()';
+    } else if (architecture == 'Clean Architecture') {
+      homePage = 'const AuthenticationPage()';
+    } else {
+      homePage = 'const AuthenticationPage()';
+    }
   } else if (features.contains('Dashboard')) {
     homePageImport =
         "import 'package:$projectName/features/dashboard/presentation/pages/dashboard_page.dart';";
@@ -89,8 +108,17 @@ void _generateAppDartFile(
     // Get the first feature if no priority features are present
     final firstFeature =
         features[0].toString().toLowerCase().replaceAll(' ', '_');
-    homePageImport =
-        "import 'package:$projectName/features/$firstFeature/presentation/pages/${firstFeature}_page.dart';";
+    if (architecture == 'MVVM') {
+      "import 'package:$projectName/features/$firstFeature/views/$firstFeature.dart';";
+    } else if (architecture == 'MVC') {
+      "import 'package:$projectName/features/$firstFeature/views/$firstFeature.dart';";
+    } else if (architecture == 'Clean Architecture') {
+      "import 'package:$projectName/features/$firstFeature/pages/$firstFeature.dart';";
+    } else {
+      homePageImport =
+          "import 'package:$projectName/features/$firstFeature/presentation/pages/${firstFeature}_page.dart';";
+    }
+
     homePage = 'const ${toClassName(firstFeature)}Page()';
   }
 
@@ -435,9 +463,11 @@ $localizationInitCode
 }
 
 /// Generate app_router.dart file for routing
-void _generateAppRouterFile(
-    HookContext context, String projectName, List<dynamic> features) {
+void _generateAppRouterFile(HookContext context, String projectName,
+    List<dynamic> features, String architecture) {
   final filePath = '$projectName/lib/app/app_router.dart';
+
+  // this import changes based on the architecture you choose
 
   // Generate imports for feature pages
   final importStatements = features.map((feature) {

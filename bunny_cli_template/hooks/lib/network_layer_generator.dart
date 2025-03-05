@@ -1,24 +1,26 @@
 import 'dart:io';
+
 import 'package:mason/mason.dart';
 
 import 'integrate_network_generator.dart';
 
 /// Generates a network layer service if the Network Layer module is selected
-void generateNetworkLayerService(HookContext context, String projectName, List<dynamic> modules) {
+void generateNetworkLayerService(
+    HookContext context, String projectName, List<dynamic> modules) {
   // Check if Network Layer is in the selected modules
   if (!modules.contains('Network Layer')) {
-    context.logger.info('Network Layer module not selected, skipping network layer generation');
+    context.logger.info(
+        'Network Layer module not selected, skipping network layer generation');
     return;
   }
 
   context.logger.info('Generating network layer for $projectName');
-  
+
   // Create directory structure
   final directories = [
     'lib/core/network',
     'lib/core/network/models',
     'lib/core/network/interceptors',
-    'lib/core/network/services',
     'lib/core/network/exceptions',
   ];
 
@@ -36,14 +38,15 @@ void generateNetworkLayerService(HookContext context, String projectName, List<d
   _generateApiResponseModelFile(context, projectName);
   _generateLoggingInterceptorFile(context, projectName);
   _generateAuthInterceptorFile(context, projectName);
-  _generateConnectivityServiceFile(context, projectName);
+  // _generateConnectivityServiceFile(context, projectName);
   _generateApiConstantsFile(context, projectName);
+  _generateNetworkReadmeFile(context, projectName);
   _generateNetworkInfoFile(context, projectName);
-  
-  // Add a sample API service to showcase how to implement a service
-  _generateSampleApiServiceFile(context, projectName);
 
-    // Integrate with main.dart
+  // Add a sample API service to showcase how to implement a service
+  // _generateSampleApiServiceFile(context, projectName);
+
+  // Integrate with main.dart
   integrateNetworkLayer(context, projectName);
 
   context.logger.success('Network layer generated successfully!');
@@ -329,7 +332,8 @@ class ApiClient {
 
 /// Generates the network exceptions file
 void _generateNetworkExceptionFile(HookContext context, String projectName) {
-  final filePath = '$projectName/lib/core/network/exceptions/network_exceptions.dart';
+  final filePath =
+      '$projectName/lib/core/network/exceptions/network_exceptions.dart';
   final content = '''
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -458,6 +462,8 @@ class NetworkExceptions with _\$NetworkExceptions {
   final file = File(filePath);
   file.writeAsStringSync(content);
   context.logger.info('Created file: $filePath');
+  context.logger.info(
+      'Note: Run "flutter pub run build_runner build --delete-conflicting-outputs" to generate the freezed code');
 }
 
 /// Generates the API response model file
@@ -549,7 +555,8 @@ class ApiResponse<T> {
 
 /// Generates the logging interceptor file
 void _generateLoggingInterceptorFile(HookContext context, String projectName) {
-  final filePath = '$projectName/lib/core/network/interceptors/logging_interceptor.dart';
+  final filePath =
+      '$projectName/lib/core/network/interceptors/logging_interceptor.dart';
   final content = '''
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -652,7 +659,8 @@ class LoggingInterceptor extends Interceptor {
 
 /// Generates the auth interceptor file
 void _generateAuthInterceptorFile(HookContext context, String projectName) {
-  final filePath = '$projectName/lib/core/network/interceptors/auth_interceptor.dart';
+  final filePath =
+      '$projectName/lib/core/network/interceptors/auth_interceptor.dart';
   final content = '''
 import 'package:dio/dio.dart';
 
@@ -751,57 +759,6 @@ class AuthInterceptor extends Interceptor {
   context.logger.info('Created file: $filePath');
 }
 
-/// Generates the connectivity service file
-void _generateConnectivityServiceFile(HookContext context, String projectName) {
-  final filePath = '$projectName/lib/core/network/services/connectivity_service.dart';
-  final content = '''
-import 'dart:async';
-import 'package:connectivity_plus/connectivity_plus.dart';
-
-/// Service to check and monitor network connectivity
-class ConnectivityService {
-  final Connectivity _connectivity = Connectivity();
-  late StreamController<ConnectivityResult> _connectionStatusController;
-  late Stream<ConnectivityResult> connectionStatusStream;
-  
-  /// Initialize the connectivity service
-  ConnectivityService() {
-    _connectionStatusController = StreamController<ConnectivityResult>.broadcast();
-    connectionStatusStream = _connectionStatusController.stream;
-    
-    // Subscribe to connectivity changes
-    _connectivity.onConnectivityChanged.listen((ConnectivityResult result) {
-      _connectionStatusController.add(result);
-    });
-  }
-  
-  /// Check current connection status
-  Future<ConnectivityResult> checkConnectivity() {
-    return _connectivity.checkConnectivity();
-  }
-  
-  /// Check if the device is connected to the internet
-  Future<bool> isConnected() async {
-    final result = await _connectivity.checkConnectivity();
-    return result != ConnectivityResult.none;
-  }
-  
-  /// Get a stream of connectivity changes
-  Stream<ConnectivityResult> get onConnectivityChanged => 
-      _connectivity.onConnectivityChanged;
-  
-  /// Dispose of the controller
-  void dispose() {
-    _connectionStatusController.close();
-  }
-}
-''';
-
-  final file = File(filePath);
-  file.writeAsStringSync(content);
-  context.logger.info('Created file: $filePath');
-}
-
 /// Generates the API constants file
 void _generateApiConstantsFile(HookContext context, String projectName) {
   final filePath = '$projectName/lib/core/network/api_constants.dart';
@@ -868,220 +825,223 @@ class NetworkInfoImpl implements NetworkInfo {
   context.logger.info('Created file: $filePath');
 }
 
-/// Generates a sample API service file to show how to use the API client
-void _generateSampleApiServiceFile(HookContext context, String projectName) {
-  final filePath = '$projectName/lib/core/network/services/sample_api_service.dart';
-  final content = '''
-import '../api_client.dart';
-import '../api_constants.dart';
-import '../models/api_response.dart';
+// /// Generates a sample API service file to show how to use the API client
+// void _generateSampleApiServiceFile(HookContext context, String projectName) {
+//   final filePath =
+//       '$projectName/lib/core/network/services/sample_api_service.dart';
+//   final content = '''
+// import '../api_client.dart';
+// import '../api_constants.dart';
+// import '../models/api_response.dart';
 
-/// Example API service for user-related operations
-class UserApiService {
-  final ApiClient _apiClient;
-  
-  UserApiService() : _apiClient = ApiClient(
-    baseUrl: ApiConstants.baseUrl,
-    timeout: ApiConstants.timeout,
-    useAuth: true,
-  );
-  
-  /// Login with email and password
-  Future<ApiResponse<Map<String, dynamic>>> login(String email, String password) async {
-    try {
-      final response = await _apiClient.post(
-        ApiConstants.login,
-        data: {
-          'email': email,
-          'password': password,
-        },
-      );
-      
-      return response;
-    } catch (e) {
-      rethrow;
-    }
-  }
-  
-  /// Register a new user
-  Future<ApiResponse<Map<String, dynamic>>> register({
-    required String email,
-    required String password,
-    required String name,
-  }) async {
-    try {
-      final response = await _apiClient.post(
-        ApiConstants.register,
-        data: {
-          'email': email,
-          'password': password,
-          'name': name,
-        },
-      );
-      
-      return response;
-    } catch (e) {
-      rethrow;
-    }
-  }
-  
-  /// Get user profile
-  Future<ApiResponse<Map<String, dynamic>>> getProfile() async {
-    try {
-      final response = await _apiClient.get(ApiConstants.profile);
-      return response;
-    } catch (e) {
-      rethrow;
-    }
-  }
-  
-  /// Update user profile
-  Future<ApiResponse<Map<String, dynamic>>> updateProfile({
-    String? name,
-    String? avatar,
-  }) async {
-    try {
-      final response = await _apiClient.put(
-        ApiConstants.profile,
-        data: {
-          if (name != null) 'name': name,
-          if (avatar != null) 'avatar': avatar,
-        },
-      );
-      
-      return response;
-    } catch (e) {
-      rethrow;
-    }
-  }
-}
+// /// Example API service for user-related operations
+// class UserApiService {
+//   final ApiClient _apiClient;
 
-/// Example API service for product-related operations
-class ProductApiService {
-  final ApiClient _apiClient;
-  
-  ProductApiService() : _apiClient = ApiClient(
-    baseUrl: ApiConstants.baseUrl,
-    timeout: ApiConstants.timeout,
-    useAuth: true,
-  );
-  
-  /// Get all products
-  Future<ApiResponse<List<dynamic>>> getProducts({
-    int page = 1,
-    int limit = 10,
-    String? category,
-  }) async {
-    try {
-      final response = await _apiClient.get(
-        ApiConstants.products,
-        queryParameters: {
-          'page': page,
-          'limit': limit,
-          if (category != null) 'category': category,
-        },
-      );
-      
-      return response;
-    } catch (e) {
-      rethrow;
-    }
-  }
-  
-  /// Get a single product by ID
-  Future<ApiResponse<Map<String, dynamic>>> getProductById(String id) async {
-    try {
-      final response = await _apiClient.get('\${ApiConstants.products}/\$id');
-      return response;
-    } catch (e) {
-      rethrow;
-    }
-  }
-  
-  /// Create a new product
-  Future<ApiResponse<Map<String, dynamic>>> createProduct({
-    required String name,
-    required double price,
-    required String description,
-    required String category,
-  }) async {
-    try {
-      final response = await _apiClient.post(
-        ApiConstants.products,
-        data: {
-          'name': name,
-          'price': price,
-          'description': description,
-          'category': category,
-        },
-      );
-      
-      return response;
-    } catch (e) {
-      rethrow;
-    }
-  }
-  
-  /// Update a product
-  Future<ApiResponse<Map<String, dynamic>>> updateProduct({
-required String id,
-    String? name,
-    double? price,
-    String? description,
-    String? category,
-  }) async {
-    try {
-      final response = await _apiClient.put(
-        '\${ApiConstants.products}/\$id',
-        data: {
-          if (name != null) 'name': name,
-          if (price != null) 'price': price,
-          if (description != null) 'description': description,
-          if (category != null) 'category': category,
-        },
-      );
-      
-      return response;
-    } catch (e) {
-      rethrow;
-    }
-  }
-  
-  /// Delete a product
-  Future<ApiResponse<Map<String, dynamic>>> deleteProduct(String id) async {
-    try {
-      final response = await _apiClient.delete('\${ApiConstants.products}/\$id');
-      return response;
-    } catch (e) {
-      rethrow;
-    }
-  }
-}
-''';
+//   UserApiService() : _apiClient = ApiClient(
+//     baseUrl: ApiConstants.baseUrl,
+//     timeout: ApiConstants.timeout,
+//     useAuth: true,
+//   );
 
-  final file = File(filePath);
-  file.writeAsStringSync(content);
-  context.logger.info('Created file: $filePath');
-}
+//   /// Login with email and password
+//   Future<ApiResponse<Map<String, dynamic>>> login(String email, String password) async {
+//     try {
+//       final response = await _apiClient.post(
+//         ApiConstants.login,
+//         data: {
+//           'email': email,
+//           'password': password,
+//         },
+//       );
+
+//       return response;
+//     } catch (e) {
+//       rethrow;
+//     }
+//   }
+
+//   /// Register a new user
+//   Future<ApiResponse<Map<String, dynamic>>> register({
+//     required String email,
+//     required String password,
+//     required String name,
+//   }) async {
+//     try {
+//       final response = await _apiClient.post(
+//         ApiConstants.register,
+//         data: {
+//           'email': email,
+//           'password': password,
+//           'name': name,
+//         },
+//       );
+
+//       return response;
+//     } catch (e) {
+//       rethrow;
+//     }
+//   }
+
+//   /// Get user profile
+//   Future<ApiResponse<Map<String, dynamic>>> getProfile() async {
+//     try {
+//       final response = await _apiClient.get(ApiConstants.profile);
+//       return response;
+//     } catch (e) {
+//       rethrow;
+//     }
+//   }
+
+//   /// Update user profile
+//   Future<ApiResponse<Map<String, dynamic>>> updateProfile({
+//     String? name,
+//     String? avatar,
+//   }) async {
+//     try {
+//       final response = await _apiClient.put(
+//         ApiConstants.profile,
+//         data: {
+//           if (name != null) 'name': name,
+//           if (avatar != null) 'avatar': avatar,
+//         },
+//       );
+
+//       return response;
+//     } catch (e) {
+//       rethrow;
+//     }
+//   }
+// }
+
+// /// Example API service for product-related operations
+// class ProductApiService {
+//   final ApiClient _apiClient;
+
+//   ProductApiService() : _apiClient = ApiClient(
+//     baseUrl: ApiConstants.baseUrl,
+//     timeout: ApiConstants.timeout,
+//     useAuth: true,
+//   );
+
+//   /// Get all products
+//   Future<ApiResponse<List<dynamic>>> getProducts({
+//     int page = 1,
+//     int limit = 10,
+//     String? category,
+//   }) async {
+//     try {
+//       final response = await _apiClient.get(
+//         ApiConstants.products,
+//         queryParameters: {
+//           'page': page,
+//           'limit': limit,
+//           if (category != null) 'category': category,
+//         },
+//       );
+
+//       return response;
+//     } catch (e) {
+//       rethrow;
+//     }
+//   }
+
+//   /// Get a single product by ID
+//   Future<ApiResponse<Map<String, dynamic>>> getProductById(String id) async {
+//     try {
+//       final response = await _apiClient.get('\${ApiConstants.products}/\$id');
+//       return response;
+//     } catch (e) {
+//       rethrow;
+//     }
+//   }
+
+//   /// Create a new product
+//   Future<ApiResponse<Map<String, dynamic>>> createProduct({
+//     required String name,
+//     required double price,
+//     required String description,
+//     required String category,
+//   }) async {
+//     try {
+//       final response = await _apiClient.post(
+//         ApiConstants.products,
+//         data: {
+//           'name': name,
+//           'price': price,
+//           'description': description,
+//           'category': category,
+//         },
+//       );
+
+//       return response;
+//     } catch (e) {
+//       rethrow;
+//     }
+//   }
+
+//   /// Update a product
+//   Future<ApiResponse<Map<String, dynamic>>> updateProduct({
+// required String id,
+//     String? name,
+//     double? price,
+//     String? description,
+//     String? category,
+//   }) async {
+//     try {
+//       final response = await _apiClient.put(
+//         '\${ApiConstants.products}/\$id',
+//         data: {
+//           if (name != null) 'name': name,
+//           if (price != null) 'price': price,
+//           if (description != null) 'description': description,
+//           if (category != null) 'category': category,
+//         },
+//       );
+
+//       return response;
+//     } catch (e) {
+//       rethrow;
+//     }
+//   }
+
+//   /// Delete a product
+//   Future<ApiResponse<Map<String, dynamic>>> deleteProduct(String id) async {
+//     try {
+//       final response = await _apiClient.delete('\${ApiConstants.products}/\$id');
+//       return response;
+//     } catch (e) {
+//       rethrow;
+//     }
+//   }
+// }
+// ''';
+
+//   final file = File(filePath);
+//   file.writeAsStringSync(content);
+//   context.logger.info('Created file: $filePath');
+// }
 
 /// Update pubspec.yaml to add network-related dependencies
 void _updatePubspecForNetwork(HookContext context, String projectName) {
   final pubspecFile = File('$projectName/pubspec.yaml');
   if (!pubspecFile.existsSync()) {
-    context.logger.warn('pubspec.yaml not found, skipping adding network dependencies');
+    context.logger
+        .warn('pubspec.yaml not found, skipping adding network dependencies');
     return;
   }
 
   String content = pubspecFile.readAsStringSync();
-  
+
   // Check if the dependencies are already added
   if (!content.contains('dio:') || !content.contains('connectivity_plus:')) {
     // Find the end of the dependencies section
-    final dependenciesMatch = RegExp(r'dependencies:\s*\n((\s{2}[\w_]+:.*\n)+)').firstMatch(content);
-    
+    final dependenciesMatch =
+        RegExp(r'dependencies:\s*\n((\s{2}[\w_]+:.*\n)+)').firstMatch(content);
+
     if (dependenciesMatch != null) {
       final endOfDependencies = dependenciesMatch.end;
-      
+
       // Network dependencies to add
       final networkDependencies = '''
 
@@ -1090,509 +1050,22 @@ void _updatePubspecForNetwork(HookContext context, String projectName) {
   connectivity_plus: ^6.0.0
   internet_connection_checker: ^3.0.1
 ''';
-      
+
       // Insert dependencies
-      content = content.substring(0, endOfDependencies) + 
-               networkDependencies + 
-               content.substring(endOfDependencies);
-      
+      content = content.substring(0, endOfDependencies) +
+          networkDependencies +
+          content.substring(endOfDependencies);
+
       // Write updated content back to file
       pubspecFile.writeAsStringSync(content);
       context.logger.success('Added network dependencies to pubspec.yaml');
     } else {
-      context.logger.warn('Could not find dependencies section in pubspec.yaml');
+      context.logger
+          .warn('Could not find dependencies section in pubspec.yaml');
     }
   } else {
     context.logger.info('Network dependencies already exist in pubspec.yaml');
   }
-}
-
-/// Create a code generator entry point to generate freezed models
-void _createNetworkExceptionGenerator(HookContext context, String projectName) {
-  final filePath = '$projectName/lib/core/network/exceptions/network_exceptions.freezed.dart';
-  final content = '''
-// coverage:ignore-file
-// GENERATED CODE - DO NOT MODIFY BY HAND
-// ignore_for_file: type=lint
-// ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
-
-part of 'network_exceptions.dart';
-
-// **************************************************************************
-// FreezedGenerator
-// **************************************************************************
-
-T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#custom-getters-and-methods');
-
-/// @nodoc
-mixin _$NetworkExceptions {
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() requestCancelled,
-    required TResult Function() unauthorizedRequest,
-    required TResult Function() badRequest,
-    required TResult Function() forbidden,
-    required TResult Function() forbiddenRequest,
-    required TResult Function() notFound,
-    required TResult Function() methodNotAllowed,
-    required TResult Function() notAcceptable,
-    required TResult Function() requestTimeout,
-    required TResult Function() receiveTimeout,
-    required TResult Function() sendTimeout,
-    required TResult Function() conflict,
-    required TResult Function() internalServerError,
-    required TResult Function() notImplemented,
-    required TResult Function() serviceUnavailable,
-    required TResult Function() noInternetConnection,
-    required TResult Function() formatException,
-    required TResult Function() unableToProcess,
-    required TResult Function(String error) defaultError,
-    required TResult Function() unexpectedError,
-    required TResult Function() badCertificate,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? requestCancelled,
-    TResult? Function()? unauthorizedRequest,
-    TResult? Function()? badRequest,
-    TResult? Function()? forbidden,
-    TResult? Function()? forbiddenRequest,
-    TResult? Function()? notFound,
-    TResult? Function()? methodNotAllowed,
-    TResult? Function()? notAcceptable,
-    TResult? Function()? requestTimeout,
-    TResult? Function()? receiveTimeout,
-    TResult? Function()? sendTimeout,
-    TResult? Function()? conflict,
-    TResult? Function()? internalServerError,
-    TResult? Function()? notImplemented,
-    TResult? Function()? serviceUnavailable,
-    TResult? Function()? noInternetConnection,
-    TResult? Function()? formatException,
-    TResult? Function()? unableToProcess,
-    TResult? Function(String error)? defaultError,
-    TResult? Function()? unexpectedError,
-    TResult? Function()? badCertificate,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? requestCancelled,
-    TResult Function()? unauthorizedRequest,
-    TResult Function()? badRequest,
-    TResult Function()? forbidden,
-    TResult Function()? forbiddenRequest,
-    TResult Function()? notFound,
-    TResult Function()? methodNotAllowed,
-    TResult Function()? notAcceptable,
-    TResult Function()? requestTimeout,
-    TResult Function()? receiveTimeout,
-    TResult Function()? sendTimeout,
-    TResult Function()? conflict,
-    TResult Function()? internalServerError,
-    TResult Function()? notImplemented,
-    TResult Function()? serviceUnavailable,
-    TResult Function()? noInternetConnection,
-    TResult Function()? formatException,
-    TResult Function()? unableToProcess,
-    TResult Function(String error)? defaultError,
-    TResult Function()? unexpectedError,
-    TResult Function()? badCertificate,
-    required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(RequestCancelled value) requestCancelled,
-    required TResult Function(UnauthorizedRequest value) unauthorizedRequest,
-    required TResult Function(BadRequest value) badRequest,
-    required TResult Function(Forbidden value) forbidden,
-    required TResult Function(ForbiddenRequest value) forbiddenRequest,
-    required TResult Function(NotFound value) notFound,
-    required TResult Function(MethodNotAllowed value) methodNotAllowed,
-    required TResult Function(NotAcceptable value) notAcceptable,
-    required TResult Function(RequestTimeout value) requestTimeout,
-    required TResult Function(ReceiveTimeout value) receiveTimeout,
-    required TResult Function(SendTimeout value) sendTimeout,
-    required TResult Function(Conflict value) conflict,
-    required TResult Function(InternalServerError value) internalServerError,
-    required TResult Function(NotImplemented value) notImplemented,
-    required TResult Function(ServiceUnavailable value) serviceUnavailable,
-    required TResult Function(NoInternetConnection value) noInternetConnection,
-    required TResult Function(FormatException value) formatException,
-    required TResult Function(UnableToProcess value) unableToProcess,
-    required TResult Function(DefaultError value) defaultError,
-    required TResult Function(UnexpectedError value) unexpectedError,
-    required TResult Function(BadCertificate value) badCertificate,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(RequestCancelled value)? requestCancelled,
-    TResult? Function(UnauthorizedRequest value)? unauthorizedRequest,
-    TResult? Function(BadRequest value)? badRequest,
-    TResult? Function(Forbidden value)? forbidden,
-    TResult? Function(ForbiddenRequest value)? forbiddenRequest,
-    TResult? Function(NotFound value)? notFound,
-    TResult? Function(MethodNotAllowed value)? methodNotAllowed,
-    TResult? Function(NotAcceptable value)? notAcceptable,
-    TResult? Function(RequestTimeout value)? requestTimeout,
-    TResult? Function(ReceiveTimeout value)? receiveTimeout,
-    TResult? Function(SendTimeout value)? sendTimeout,
-    TResult? Function(Conflict value)? conflict,
-    TResult? Function(InternalServerError value)? internalServerError,
-    TResult? Function(NotImplemented value)? notImplemented,
-    TResult? Function(ServiceUnavailable value)? serviceUnavailable,
-    TResult? Function(NoInternetConnection value)? noInternetConnection,
-    TResult? Function(FormatException value)? formatException,
-    TResult? Function(UnableToProcess value)? unableToProcess,
-    TResult? Function(DefaultError value)? defaultError,
-    TResult? Function(UnexpectedError value)? unexpectedError,
-    TResult? Function(BadCertificate value)? badCertificate,
-  }) =>
-      throw _privateConstructorUsedError;
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(RequestCancelled value)? requestCancelled,
-    TResult Function(UnauthorizedRequest value)? unauthorizedRequest,
-    TResult Function(BadRequest value)? badRequest,
-    TResult Function(Forbidden value)? forbidden,
-    TResult Function(ForbiddenRequest value)? forbiddenRequest,
-    TResult Function(NotFound value)? notFound,
-    TResult Function(MethodNotAllowed value)? methodNotAllowed,
-    TResult Function(NotAcceptable value)? notAcceptable,
-    TResult Function(RequestTimeout value)? requestTimeout,
-    TResult Function(ReceiveTimeout value)? receiveTimeout,
-    TResult Function(SendTimeout value)? sendTimeout,
-    TResult Function(Conflict value)? conflict,
-    TResult Function(InternalServerError value)? internalServerError,
-    TResult Function(NotImplemented value)? notImplemented,
-    TResult Function(ServiceUnavailable value)? serviceUnavailable,
-    TResult Function(NoInternetConnection value)? noInternetConnection,
-    TResult Function(FormatException value)? formatException,
-    TResult Function(UnableToProcess value)? unableToProcess,
-    TResult Function(DefaultError value)? defaultError,
-    TResult Function(UnexpectedError value)? unexpectedError,
-    TResult Function(BadCertificate value)? badCertificate,
-    required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $NetworkExceptionsCopyWith<$Res> {
-  factory $NetworkExceptionsCopyWith(
-          NetworkExceptions value, $Res Function(NetworkExceptions) then) =
-      _$NetworkExceptionsCopyWithImpl<$Res, NetworkExceptions>;
-}
-
-/// @nodoc
-class _$NetworkExceptionsCopyWithImpl<$Res, $Val extends NetworkExceptions>
-    implements $NetworkExceptionsCopyWith<$Res> {
-  _$NetworkExceptionsCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-}
-
-/// @nodoc
-abstract class _$$RequestCancelledCopyWith<$Res> {
-  factory _$$RequestCancelledCopyWith(
-          _$RequestCancelled value, $Res Function(_$RequestCancelled) then) =
-      __$$RequestCancelledCopyWithImpl<$Res>;
-}
-
-/// @nodoc
-class __$$RequestCancelledCopyWithImpl<$Res>
-    extends _$NetworkExceptionsCopyWithImpl<$Res, _$RequestCancelled>
-    implements _$$RequestCancelledCopyWith<$Res> {
-  __$$RequestCancelledCopyWithImpl(
-      _$RequestCancelled _value, $Res Function(_$RequestCancelled) _then)
-      : super(_value, _then);
-}
-
-/// @nodoc
-
-class _$RequestCancelled implements RequestCancelled {
-  const _$RequestCancelled();
-
-  @override
-  String toString() {
-    return 'NetworkExceptions.requestCancelled()';
-  }
-
-  @override
-  bool operator ==(dynamic other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType && other is _$RequestCancelled);
-  }
-
-  @override
-  int get hashCode => runtimeType.hashCode;
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() requestCancelled,
-    required TResult Function() unauthorizedRequest,
-    required TResult Function() badRequest,
-    required TResult Function() forbidden,
-    required TResult Function() forbiddenRequest,
-    required TResult Function() notFound,
-    required TResult Function() methodNotAllowed,
-    required TResult Function() notAcceptable,
-    required TResult Function() requestTimeout,
-    required TResult Function() receiveTimeout,
-    required TResult Function() sendTimeout,
-    required TResult Function() conflict,
-    required TResult Function() internalServerError,
-    required TResult Function() notImplemented,
-    required TResult Function() serviceUnavailable,
-    required TResult Function() noInternetConnection,
-    required TResult Function() formatException,
-    required TResult Function() unableToProcess,
-    required TResult Function(String error) defaultError,
-    required TResult Function() unexpectedError,
-    required TResult Function() badCertificate,
-  }) {
-    return requestCancelled();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? requestCancelled,
-    TResult? Function()? unauthorizedRequest,
-    TResult? Function()? badRequest,
-    TResult? Function()? forbidden,
-    TResult? Function()? forbiddenRequest,
-    TResult? Function()? notFound,
-    TResult? Function()? methodNotAllowed,
-    TResult? Function()? notAcceptable,
-    TResult? Function()? requestTimeout,
-    TResult? Function()? receiveTimeout,
-    TResult? Function()? sendTimeout,
-    TResult? Function()? conflict,
-    TResult? Function()? internalServerError,
-    TResult? Function()? notImplemented,
-    TResult? Function()? serviceUnavailable,
-    TResult? Function()? noInternetConnection,
-    TResult? Function()? formatException,
-    TResult? Function()? unableToProcess,
-    TResult? Function(String error)? defaultError,
-    TResult? Function()? unexpectedError,
-    TResult? Function()? badCertificate,
-  }) {
-    return requestCancelled?.call();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? requestCancelled,
-    TResult Function()? unauthorizedRequest,
-    TResult Function()? badRequest,
-    TResult Function()? forbidden,
-    TResult Function()? forbiddenRequest,
-    TResult Function()? notFound,
-    TResult Function()? methodNotAllowed,
-    TResult Function()? notAcceptable,
-    TResult Function()? requestTimeout,
-    TResult Function()? receiveTimeout,
-    TResult Function()? sendTimeout,
-    TResult Function()? conflict,
-    TResult Function()? internalServerError,
-    TResult Function()? notImplemented,
-    TResult Function()? serviceUnavailable,
-    TResult Function()? noInternetConnection,
-    TResult Function()? formatException,
-    TResult Function()? unableToProcess,
-    TResult Function(String error)? defaultError,
-    TResult Function()? unexpectedError,
-    TResult Function()? badCertificate,
-    required TResult orElse(),
-  }) {
-    if (requestCancelled != null) {
-      return requestCancelled();
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(RequestCancelled value) requestCancelled,
-    required TResult Function(UnauthorizedRequest value) unauthorizedRequest,
-    required TResult Function(BadRequest value) badRequest,
-    required TResult Function(Forbidden value) forbidden,
-    required TResult Function(ForbiddenRequest value) forbiddenRequest,
-    required TResult Function(NotFound value) notFound,
-    required TResult Function(MethodNotAllowed value) methodNotAllowed,
-    required TResult Function(NotAcceptable value) notAcceptable,
-    required TResult Function(RequestTimeout value) requestTimeout,
-    required TResult Function(ReceiveTimeout value) receiveTimeout,
-    required TResult Function(SendTimeout value) sendTimeout,
-    required TResult Function(Conflict value) conflict,
-    required TResult Function(InternalServerError value) internalServerError,
-    required TResult Function(NotImplemented value) notImplemented,
-    required TResult Function(ServiceUnavailable value) serviceUnavailable,
-    required TResult Function(NoInternetConnection value) noInternetConnection,
-    required TResult Function(FormatException value) formatException,
-    required TResult Function(UnableToProcess value) unableToProcess,
-    required TResult Function(DefaultError value) defaultError,
-    required TResult Function(UnexpectedError value) unexpectedError,
-    required TResult Function(BadCertificate value) badCertificate,
-  }) {
-    return requestCancelled(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(RequestCancelled value)? requestCancelled,
-    TResult? Function(UnauthorizedRequest value)? unauthorizedRequest,
-    TResult? Function(BadRequest value)? badRequest,
-    TResult? Function(Forbidden value)? forbidden,
-    TResult? Function(ForbiddenRequest value)? forbiddenRequest,
-    TResult? Function(NotFound value)? notFound,
-    TResult? Function(MethodNotAllowed value)? methodNotAllowed,
-    TResult? Function(NotAcceptable value)? notAcceptable,
-    TResult? Function(RequestTimeout value)? requestTimeout,
-    TResult? Function(ReceiveTimeout value)? receiveTimeout,
-    TResult? Function(SendTimeout value)? sendTimeout,
-    TResult? Function(Conflict value)? conflict,
-    TResult? Function(InternalServerError value)? internalServerError,
-    TResult? Function(NotImplemented value)? notImplemented,
-    TResult? Function(ServiceUnavailable value)? serviceUnavailable,
-    TResult? Function(NoInternetConnection value)? noInternetConnection,
-    TResult? Function(FormatException value)? formatException,
-    TResult? Function(UnableToProcess value)? unableToProcess,
-    TResult? Function(DefaultError value)? defaultError,
-    TResult? Function(UnexpectedError value)? unexpectedError,
-    TResult? Function(BadCertificate value)? badCertificate,
-  }) {
-    return requestCancelled?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(RequestCancelled value)? requestCancelled,
-    TResult Function(UnauthorizedRequest value)? unauthorizedRequest,
-    TResult Function(BadRequest value)? badRequest,
-    TResult Function(Forbidden value)? forbidden,
-    TResult Function(ForbiddenRequest value)? forbiddenRequest,
-    TResult Function(NotFound value)? notFound,
-    TResult Function(MethodNotAllowed value)? methodNotAllowed,
-    TResult Function(NotAcceptable value)? notAcceptable,
-    TResult Function(RequestTimeout value)? requestTimeout,
-    TResult Function(ReceiveTimeout value)? receiveTimeout,
-    TResult Function(SendTimeout value)? sendTimeout,
-    TResult Function(Conflict value)? conflict,
-    TResult Function(InternalServerError value)? internalServerError,
-    TResult Function(NotImplemented value)? notImplemented,
-    TResult Function(ServiceUnavailable value)? serviceUnavailable,
-    TResult Function(NoInternetConnection value)? noInternetConnection,
-    TResult Function(FormatException value)? formatException,
-    TResult Function(UnableToProcess value)? unableToProcess,
-    TResult Function(DefaultError value)? defaultError,
-    TResult Function(UnexpectedError value)? unexpectedError,
-    TResult Function(BadCertificate value)? badCertificate,
-    required TResult orElse(),
-  }) {
-    if (requestCancelled != null) {
-      return requestCancelled(this);
-    }
-    return orElse();
-  }
-}
-
-/// @nodoc
-
-class _$UnauthorizedRequest implements UnauthorizedRequest {
-  const _$UnauthorizedRequest();
-
-  @override
-  String toString() {
-    return 'NetworkExceptions.unauthorizedRequest()';
-  }
-
-  @override
-  bool operator ==(dynamic other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType && other is _$UnauthorizedRequest);
-  }
-
-  @override
-  int get hashCode => runtimeType.hashCode;
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() requestCancelled,
-    required TResult Function() unauthorizedRequest,
-    required TResult Function() badRequest,
-    required TResult Function() forbidden,
-    required TResult Function() forbiddenRequest,
-    required TResult Function() notFound,
-    required TResult Function() methodNotAllowed,
-    required TResult Function() notAcceptable,
-    required TResult Function() requestTimeout,
-    required TResult Function() receiveTimeout,
-    required TResult Function() sendTimeout,
-    required TResult Function() conflict,
-    required TResult Function() internalServerError,
-    required TResult Function() notImplemented,
-    required TResult Function() serviceUnavailable,
-    required TResult Function() noInternetConnection,
-    required TResult Function() formatException,
-    required TResult Function() unableToProcess,
-    required TResult Function(String error) defaultError,
-    required TResult Function() unexpectedError,
-    required TResult Function() badCertificate,
-  }) {
-    return unauthorizedRequest();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? requestCancelled,
-    TResult? Function()? unauthorizedRequest,
-    TResult? Function()? badRequest,
-    TResult? Function()? forbidden,
-    TResult? Function()? forbiddenRequest,
-    TResult? Function()? notFound,
-    TResult? Function()? methodNotAllowed,
-    TResult? Function()? notAcceptable,
-    TResult? Function()? requestTimeout,
-    TResult? Function()? receiveTimeout,
-    TResult? Function()? sendTimeout,
-    TResult? Function()? conflict,
-    TResult? Function()? internalServerError,
-    TResult? Function()? notImplemented,
-    TResult? Function()? serviceUnavailable,
-    TResult? Function()? noInternetConnection,
-    TResult? Function()? formatException,
-    TResult? Function()? unableToProcess,
-    TResult? Function(String error)? defaultError,
-    TResult? Function()? unexpectedError,
-    TResult? Function()? badCertificate,
-  }) {
-    return unauthorizedRequest?.call();
-  }
-}
-''';
-
-  final file = File(filePath);
-  file.writeAsStringSync(content);
-  context.logger.info('Created file: $filePath for freezed code generation');
 }
 
 /// Generate a README file with network layer usage instructions
@@ -1700,10 +1173,9 @@ try {
     final error = response.error;
     final message = NetworkExceptions.getErrorMessage(error!);
     
-    print('Error: $message');
   }
 } catch (e) {
-  print('Unexpected error: $e');
+
 }
 ```
 
@@ -1785,7 +1257,7 @@ final response = await apiClient.download(
   '/path/to/save/file.pdf',
   onReceiveProgress: (received, total) {
     final progress = (received / total) * 100;
-    print('Download progress: $progress%');
+    print('Download progress: ${'progress'}%');
   },
 );
 
@@ -1798,5 +1270,7 @@ if (response.isSuccess) {
 
   final file = File(filePath);
   file.writeAsStringSync(content);
-  context.logger.info('Created network layer README file: $filePath');
+  context.logger.info('Created file: $filePath');
+  context.logger.info(
+      'Run "flutter pub run build_runner build" to generate freezed files');
 }

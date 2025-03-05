@@ -44,7 +44,6 @@ void createArchitectureStructure(
         'lib/core/utils',
         'lib/core/services',
         'lib/shared/widgets',
-        'lib/shared/services',
       ];
       break;
     default:

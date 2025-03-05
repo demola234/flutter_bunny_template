@@ -160,11 +160,11 @@ dev_dependencies:
   freezed: ^2.4.5
 ''';
 
-//   if (modules.contains('Network Layer')) {
-//     pubspecContent += '''
-//   retrofit_generator: ^8.0.1
-// ''';
-//   }
+  if (modules.contains('Network Layer')) {
+    pubspecContent += '''
+  internet_connection_checker: ^3.0.1
+''';
+  }
 
   if (modules.contains('Local Storage')) {
     pubspecContent += '''

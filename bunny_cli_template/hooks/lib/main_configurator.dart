@@ -19,7 +19,6 @@ void generateMainDart(
   mainContent = '''
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'core/utils/state_management_observability.dart';
 import 'dart:async';
 ''';
 
@@ -55,6 +54,9 @@ import 'package:flutter_mobx/flutter_mobx.dart';
     mainContent += '''
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
+import 'package:$projectName/core/redux/app_reducer.dart';
+import 'package:$projectName/core/redux/app_state.dart';
+import 'package:redux_thunk/redux_thunk.dart';
 ''';
   }
 
@@ -62,12 +64,15 @@ import 'package:redux/redux.dart';
   if (architecture == 'Clean Architecture') {
     mainContent += '''
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 ''';
   } else if (architecture == 'MVVM') {
     mainContent += '''
-import 'package:stacked_services/stacked_services.dart';
-import 'package:$projectName/app/app.locator.dart';
-import 'package:$projectName/app/app.router.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+''';
+  } else if (architecture == 'MVC') {
+    mainContent += '''
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 ''';
   } else if (architecture == 'Feature-Driven') {
     mainContent += '''
@@ -97,7 +102,7 @@ void main() async {
 ''';
   } else if (architecture == 'MVVM') {
     mainContent += '''
-  await setupLocator();
+  await dotenv.load(fileName: ".env");
 ''';
   }
 

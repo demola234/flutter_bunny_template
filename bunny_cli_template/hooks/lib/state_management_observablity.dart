@@ -375,8 +375,10 @@ class MobXObserver {
     );
   }
 
-  $logUtility
+
 }
+
+  $logUtility
 
 /// Setup function to initialize observability for MobX
 void setupStateObservability() {

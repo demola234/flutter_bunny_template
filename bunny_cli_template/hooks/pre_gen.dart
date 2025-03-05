@@ -7,6 +7,7 @@ import 'package:flutter_bunny_cli/main_configurator.dart';
 import 'package:flutter_bunny_cli/network_layer_generator.dart';
 import 'package:flutter_bunny_cli/pubsec_configurator.dart';
 import 'package:flutter_bunny_cli/push_notification_generator.dart';
+import 'package:flutter_bunny_cli/redux_generator.dart';
 import 'package:flutter_bunny_cli/state_management_observablity.dart';
 import 'package:flutter_bunny_cli/theme_manager_generator.dart';
 import 'package:mason/mason.dart';
@@ -81,6 +82,9 @@ void run(HookContext context) {
 
   // Setup network module if Network Module is selected
   generateNetworkLayerService(context, projectName, modules);
+
+  // Redux specific setup
+  generateReduxFiles(context, projectName, stateManagement);
 
   // Create module structures
   createModuleStructures(context, projectName, modules, architecture);
@@ -158,14 +162,15 @@ void createModuleStructures(HookContext context, String projectName,
         baseDir = 'core';
         break;
       case 'MVVM':
+        baseDir = 'core';
       case 'MVC':
-        baseDir = 'shared/services';
+        baseDir = 'core';
         break;
       case 'Feature-Driven':
         baseDir = 'shared/services';
         break;
       default:
-        baseDir = 'shared/services';
+        baseDir = 'core';
     }
 
     final directory = Directory('$projectName/lib/$baseDir/$moduleName');
