@@ -554,6 +554,7 @@ class ThemeCubit extends Cubit<ThemeState> {
     case 'Provider':
       content = '''
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Enum representing different theme modes

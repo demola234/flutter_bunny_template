@@ -1,16 +1,19 @@
 import 'dart:io';
+
 import 'package:mason/mason.dart';
 
 /// Generates localization system if Localization module is selected
-void generateLocalizationSystem(HookContext context, String projectName, List<dynamic> modules) {
+void generateLocalizationSystem(
+    HookContext context, String projectName, List<dynamic> modules) {
   // Check if Localization is in the selected modules
   if (!modules.contains('Localization')) {
-    context.logger.info('Localization module not selected, skipping localization system generation');
+    context.logger.info(
+        'Localization module not selected, skipping localization system generation');
     return;
   }
 
   context.logger.info('Generating localization system for $projectName');
-  
+
   // Create directory structure
   final directories = [
     'lib/core/localization',
@@ -31,7 +34,7 @@ void generateLocalizationSystem(HookContext context, String projectName, List<dy
   _generateL10nYamlFile(context, projectName);
   _generateIntlEnArbFile(context, projectName);
   _generateIntlEsArbFile(context, projectName);
-  
+
   // Generate generated files
   _generateStringsDartFile(context, projectName);
   _generateStringsEnDartFile(context, projectName);
@@ -39,9 +42,9 @@ void generateLocalizationSystem(HookContext context, String projectName, List<dy
 
   // Update pubspec.yaml to add localization dependencies
   _updatePubspecForLocalization(context, projectName);
-  
+
   // Update main.dart to initialize localization
-  _updateMainForLocalization(context, projectName);
+  // _updateMainForLocalization(context, projectName);
 
   context.logger.success('Localization system generated successfully!');
 }
@@ -269,7 +272,6 @@ void _generateIntlEsArbFile(HookContext context, String projectName) {
 void _generateStringsDartFile(HookContext context, String projectName) {
   final filePath = '$projectName/lib/core/localization/generated/strings.dart';
   final content = '''
-import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -495,7 +497,8 @@ Strings lookupStrings(Locale locale) {
 
 /// Generates the generated/strings_en.dart file
 void _generateStringsEnDartFile(HookContext context, String projectName) {
-  final filePath = '$projectName/lib/core/localization/generated/strings_en.dart';
+  final filePath =
+      '$projectName/lib/core/localization/generated/strings_en.dart';
   final content = '''
 import 'package:intl/intl.dart' as intl;
 
@@ -571,7 +574,8 @@ class StringsEn extends Strings {
 
 /// Generates the generated/strings_es.dart file
 void _generateStringsEsDartFile(HookContext context, String projectName) {
-  final filePath = '$projectName/lib/core/localization/generated/strings_es.dart';
+  final filePath =
+      '$projectName/lib/core/localization/generated/strings_es.dart';
   final content = '''
 import 'package:intl/intl.dart' as intl;
 
@@ -649,31 +653,31 @@ class StringsEs extends Strings {
 void _updatePubspecForLocalization(HookContext context, String projectName) {
   final pubspecFile = File('$projectName/pubspec.yaml');
   if (!pubspecFile.existsSync()) {
-    context.logger.warn('pubspec.yaml not found, skipping adding localization dependencies');
+    context.logger.warn(
+        'pubspec.yaml not found, skipping adding localization dependencies');
     return;
   }
 
   String content = pubspecFile.readAsStringSync();
-  
+
   // Make sure flutter_localizations is included
   if (!content.contains('flutter_localizations:')) {
     // Find the position to insert the dependencies
     final sdkDepIndex = content.indexOf('sdk: flutter');
     if (sdkDepIndex != -1) {
       final insertPoint = content.indexOf('\n', sdkDepIndex) + 1;
-      
+
       final localizationDeps = '''
   flutter_localizations:
     sdk: flutter
-  intl: any # Use the pinned version from flutter_localizations
 ''';
-      
-      content = content.substring(0, insertPoint) + 
-               localizationDeps + 
-               content.substring(insertPoint);
+
+      content = content.substring(0, insertPoint + 1) +
+          localizationDeps +
+          content.substring(insertPoint + 1);
     }
   }
-  
+
   // Check if the generate: true is in the flutter section
   final flutterSection = content.indexOf('flutter:');
   if (flutterSection != -1) {
@@ -681,15 +685,14 @@ void _updatePubspecForLocalization(HookContext context, String projectName) {
     if (flutterEndIndex != -1) {
       final flutterSectionStart = content.substring(0, flutterEndIndex + 1);
       final flutterSectionEnd = content.substring(flutterEndIndex + 1);
-      
+
       if (!content.contains('generate: true')) {
-        content = flutterSectionStart +
-                 '  generate: true\n' +
-                 flutterSectionEnd;
+        content =
+            flutterSectionStart + '  generate: true\n' + flutterSectionEnd;
       }
     }
   }
-  
+
   // Write updated content back to file
   pubspecFile.writeAsStringSync(content);
   context.logger.success('Updated pubspec.yaml with localization dependencies');
@@ -699,32 +702,34 @@ void _updatePubspecForLocalization(HookContext context, String projectName) {
 void _updateMainForLocalization(HookContext context, String projectName) {
   final mainDartFile = File('$projectName/lib/main.dart');
   if (!mainDartFile.existsSync()) {
-    context.logger.warn('main.dart not found, skipping localization initialization');
+    context.logger
+        .warn('main.dart not found, skipping localization initialization');
     return;
   }
 
   String content = mainDartFile.readAsStringSync();
-  
+
   // Add import if not already present
   if (!content.contains('localization.dart')) {
     final importPattern = RegExp(r'import .*;\n');
     final lastImportMatch = importPattern.allMatches(content).lastOrNull;
-    
+
     if (lastImportMatch != null) {
       final insertPosition = lastImportMatch.end;
       content = content.substring(0, insertPosition) +
-               "import 'package:$projectName/core/localization/localization.dart';\n" +
-               content.substring(insertPosition);
+          "import 'package:$projectName/core/localization/localization.dart';\n" +
+          content.substring(insertPosition);
     }
   }
-  
+
   // Update MaterialApp or similar widget to add localization delegates
   final materialAppPattern = RegExp(r'MaterialApp\(');
   final getMatAppPattern = RegExp(r'GetMaterialApp\(');
-  
+
   if (materialAppPattern.hasMatch(content)) {
     // Find a good spot to insert localization properties
-    if (!content.contains('localizationsDelegates:') && !content.contains('supportedLocales:')) {
+    if (!content.contains('localizationsDelegates:') &&
+        !content.contains('supportedLocales:')) {
       content = content.replaceAll(
         'MaterialApp(',
         'MaterialApp(\n      localizationsDelegates: Localization.localizationDelegates,\n      supportedLocales: Localization.supportedLocales,\n      // Set initial locale if needed\n      // locale: const Locale(\'en\'),',
@@ -732,14 +737,15 @@ void _updateMainForLocalization(HookContext context, String projectName) {
     }
   } else if (getMatAppPattern.hasMatch(content)) {
     // Support for GetX
-    if (!content.contains('localizationsDelegates:') && !content.contains('supportedLocales:')) {
+    if (!content.contains('localizationsDelegates:') &&
+        !content.contains('supportedLocales:')) {
       content = content.replaceAll(
         'GetMaterialApp(',
         'GetMaterialApp(\n      localizationsDelegates: Localization.localizationDelegates,\n      supportedLocales: Localization.supportedLocales,\n      // Set initial locale if needed\n      // locale: const Locale(\'en\'),',
       );
     }
   }
-  
+
   // Write updated content back to file
   mainDartFile.writeAsStringSync(content);
   context.logger.success('Updated main.dart with localization configuration');
@@ -751,8 +757,9 @@ void _generateLanguageSelectorWidget(HookContext context, String projectName) {
   if (!directory.existsSync()) {
     directory.createSync(recursive: true);
   }
-  
-  final filePath = '$projectName/lib/core/localization/widgets/language_selector.dart';
+
+  final filePath =
+      '$projectName/lib/core/localization/widgets/language_selector.dart';
   final content = '''
 import 'package:flutter/material.dart';
 
@@ -840,19 +847,21 @@ class LanguageToggle extends StatelessWidget {
 }
 
 /// Generate a LocalizationProvider for state management if using Provider
-void _generateLocalizationProvider(HookContext context, String projectName, String stateManagement) {
+void _generateLocalizationProvider(
+    HookContext context, String projectName, String stateManagement) {
   if (stateManagement != 'Provider') {
     return;
   }
-  
-  final filePath = '$projectName/lib/core/localization/providers/localization_provider.dart';
-  
+
+  final filePath =
+      '$projectName/lib/core/localization/providers/localization_provider.dart';
+
   // Create directory if it doesn't exist
   final directory = Directory('$projectName/lib/core/localization/providers');
   if (!directory.existsSync()) {
     directory.createSync(recursive: true);
   }
-  
+
   final content = '''
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -902,19 +911,21 @@ class LocalizationProvider extends ChangeNotifier {
 }
 
 /// Generate localization controller for GetX if using GetX
-void _generateLocalizationController(HookContext context, String projectName, String stateManagement) {
+void _generateLocalizationController(
+    HookContext context, String projectName, String stateManagement) {
   if (stateManagement != 'GetX') {
     return;
   }
-  
-  final filePath = '$projectName/lib/core/localization/controllers/localization_controller.dart';
-  
+
+  final filePath =
+      '$projectName/lib/core/localization/controllers/localization_controller.dart';
+
   // Create directory if it doesn't exist
   final directory = Directory('$projectName/lib/core/localization/controllers');
   if (!directory.existsSync()) {
     directory.createSync(recursive: true);
   }
-  
+
   final content = '''
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -1000,27 +1011,29 @@ class LocalizationController extends GetxController {
 }
 
 /// Generate localization BLoC if using BLoC
-void _generateLocalizationBloc(HookContext context, String projectName, String stateManagement) {
+void _generateLocalizationBloc(
+    HookContext context, String projectName, String stateManagement) {
   if (stateManagement != 'Bloc' && stateManagement != 'BLoC') {
     return;
   }
-  
+
   // Create directories if they don't exist
   final directories = [
     '$projectName/lib/core/localization/bloc',
     '$projectName/lib/core/localization/bloc/state',
     '$projectName/lib/core/localization/bloc/event',
   ];
-  
+
   for (final dir in directories) {
     final directory = Directory(dir);
     if (!directory.existsSync()) {
       directory.createSync(recursive: true);
     }
   }
-  
+
   // Generate localization state file
-  final stateFilePath = '$projectName/lib/core/localization/bloc/state/localization_state.dart';
+  final stateFilePath =
+      '$projectName/lib/core/localization/bloc/state/localization_state.dart';
   final stateContent = '''
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
@@ -1062,9 +1075,10 @@ class LocalizationError extends LocalizationState {
   final stateFile = File(stateFilePath);
   stateFile.writeAsStringSync(stateContent);
   context.logger.info('Created file: $stateFilePath');
-  
+
   // Generate localization event file
-  final eventFilePath = '$projectName/lib/core/localization/bloc/event/localization_event.dart';
+  final eventFilePath =
+      '$projectName/lib/core/localization/bloc/event/localization_event.dart';
   final eventContent = '''
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
@@ -1096,9 +1110,10 @@ class LocalizationChanged extends LocalizationEvent {
   final eventFile = File(eventFilePath);
   eventFile.writeAsStringSync(eventContent);
   context.logger.info('Created file: $eventFilePath');
-  
+
   // Generate bloc file
-  final blocFilePath = '$projectName/lib/core/localization/bloc/localization_bloc.dart';
+  final blocFilePath =
+      '$projectName/lib/core/localization/bloc/localization_bloc.dart';
   final blocContent = '''
 import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
@@ -1159,11 +1174,12 @@ class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
 }
 
 /// Generate localization repository for Clean Architecture
-void _generateLocalizationRepository(HookContext context, String projectName, String architecture) {
+void _generateLocalizationRepository(
+    HookContext context, String projectName, String architecture) {
   if (architecture != 'Clean Architecture') {
     return;
   }
-  
+
   // Create directories
   final directories = [
     '$projectName/lib/core/localization/domain/repositories',
@@ -1171,16 +1187,17 @@ void _generateLocalizationRepository(HookContext context, String projectName, St
     '$projectName/lib/core/localization/data/repositories',
     '$projectName/lib/core/localization/data/datasources',
   ];
-  
+
   for (final dir in directories) {
     final directory = Directory(dir);
     if (!directory.existsSync()) {
       directory.createSync(recursive: true);
     }
   }
-  
+
   // Generate repository interface
-  final repoPath = '$projectName/lib/core/localization/domain/repositories/localization_repository.dart';
+  final repoPath =
+      '$projectName/lib/core/localization/domain/repositories/localization_repository.dart';
   final repoContent = '''
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
@@ -1203,9 +1220,10 @@ abstract class LocalizationRepository {
   final repoFile = File(repoPath);
   repoFile.writeAsStringSync(repoContent);
   context.logger.info('Created file: $repoPath');
-  
+
   // Generate data source interface
-  final dsPath = '$projectName/lib/core/localization/data/datasources/localization_data_source.dart';
+  final dsPath =
+      '$projectName/lib/core/localization/data/datasources/localization_data_source.dart';
   final dsContent = '''
 import 'package:flutter/material.dart';
 
@@ -1252,14 +1270,16 @@ class LocalizationLocalDataSource implements LocalizationDataSource {
   final dsFile = File(dsPath);
   dsFile.writeAsStringSync(dsContent);
   context.logger.info('Created file: $dsPath');
-  
+
   // Add import at the top of the file
-  final importLine = "import 'package:shared_preferences/shared_preferences.dart';\n\n";
+  final importLine =
+      "import 'package:shared_preferences/shared_preferences.dart';\n\n";
   final dsFileContent = dsFile.readAsStringSync();
   dsFile.writeAsStringSync(importLine + dsFileContent);
-  
+
   // Generate repository implementation
-  final repoImplPath = '$projectName/lib/core/localization/data/repositories/localization_repository_impl.dart';
+  final repoImplPath =
+      '$projectName/lib/core/localization/data/repositories/localization_repository_impl.dart';
   final repoImplContent = '''
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
@@ -1310,9 +1330,10 @@ class LocalizationRepositoryImpl implements LocalizationRepository {
   final repoImplFile = File(repoImplPath);
   repoImplFile.writeAsStringSync(repoImplContent);
   context.logger.info('Created file: $repoImplPath');
-  
+
   // Generate use cases
-  final usecasesPath = '$projectName/lib/core/localization/domain/usecases/localization_usecases.dart';
+  final usecasesPath =
+      '$projectName/lib/core/localization/domain/usecases/localization_usecases.dart';
   final usecasesContent = '''
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
@@ -1360,30 +1381,31 @@ class GetSupportedLocalesUseCase {
 }
 
 /// Complete localization system generation based on project configuration
-void generateCompleteLocalizationSystem(HookContext context, String projectName, String stateManagement, String architecture) {
+void generateCompleteLocalizationSystem(HookContext context, String projectName,
+    String stateManagement, String architecture) {
   // Generate basic files
   _generateLocalizationFile(context, projectName);
   _generateL10nFile(context, projectName);
   _generateL10nYamlFile(context, projectName);
   _generateIntlEnArbFile(context, projectName);
   _generateIntlEsArbFile(context, projectName);
-  
+
   // Generate generated files
   _generateStringsDartFile(context, projectName);
   _generateStringsEnDartFile(context, projectName);
   _generateStringsEsDartFile(context, projectName);
-  
+
   // Generate example widget
   _generateLanguageSelectorWidget(context, projectName);
-  
+
   // Generate state management specific implementations
   _generateLocalizationProvider(context, projectName, stateManagement);
   _generateLocalizationController(context, projectName, stateManagement);
   _generateLocalizationBloc(context, projectName, stateManagement);
-  
+
   // Generate architecture specific implementations
   _generateLocalizationRepository(context, projectName, architecture);
-  
+
   // Update pubspec.yaml and main.dart
   _updatePubspecForLocalization(context, projectName);
   _updateMainForLocalization(context, projectName);

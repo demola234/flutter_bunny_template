@@ -28,8 +28,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_localizations:
-    sdk: flutter
 
   # Core packages
   cupertino_icons: ^1.0.6
@@ -193,31 +191,19 @@ flutter:
 
   assets:
     - assets/images/
-    - assets/icons/
-    - assets/jsons/
-    - assets/gif/
 ''';
 
-  // Add conditional assets based on features and modules
-  if (modules.contains('Localization')) {
-    pubspecContent += '''
-    - assets/translations/
-''';
-  }
+//   // Add conditional assets based on features and modules
+//   if (modules.contains('Localization')) {
+//     pubspecContent += '''
+//     - assets/translations/
+// ''';
+//   }
 
   pubspecContent += '''
     - .env
 
-  fonts:
-    - family: Poppins
-      fonts:
-        - asset: assets/fonts/Poppins-Regular.ttf
-        - asset: assets/fonts/Poppins-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/Poppins-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/Poppins-Bold.ttf
-          weight: 700
+  
 ''';
 
   // Flutter native splash configuration if dashboard feature is included

@@ -164,9 +164,9 @@
       "languageVersion": "3.6"
     }
   ],
-  "generated": "2025-02-27T19:07:43.461700Z",
+  "generated": "2025-03-08T11:02:19.796987Z",
   "generator": "pub",
-  "generatorVersion": "3.6.0",
+  "generatorVersion": "3.7.1",
   "flutterRoot": "file:///Users/ademola/development/flutter",
   "flutterVersion": "3.29.0",
   "pubCache": "file:///Users/ademola/.pub-cache"

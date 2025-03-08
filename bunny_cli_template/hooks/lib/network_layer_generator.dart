@@ -58,7 +58,6 @@ void _generateApiClientFile(HookContext context, String projectName) {
   final content = '''
 import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 
 import 'interceptors/auth_interceptor.dart';
 import 'interceptors/logging_interceptor.dart';

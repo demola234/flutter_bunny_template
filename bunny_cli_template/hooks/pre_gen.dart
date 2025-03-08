@@ -87,7 +87,7 @@ void run(HookContext context) {
   generateReduxFiles(context, projectName, stateManagement);
 
   // Create module structures
-  createModuleStructures(context, projectName, modules, architecture);
+  // createModuleStructures(context, projectName, modules, architecture);
 
   // Generate main.dart file based on architecture, state management, features, and modules
   generateMainDart(context, projectName, organizationName, architecture,
@@ -140,6 +140,9 @@ void createProjectStructure(HookContext context, String projectName) {
     'test',
     'assets',
     'assets/images',
+    'assets/icons',
+    'assets/fonts',
+    'assets/json',
   ];
 
   for (final dir in directories) {
@@ -179,10 +182,10 @@ void createModuleStructures(HookContext context, String projectName,
       context.logger.info('Created module directory: lib/$baseDir/$moduleName');
 
       // Create a base file for the module
-      createFile(
-          '$projectName/lib/$baseDir/$moduleName/${moduleName}_service.dart',
-          generateServiceTemplate(moduleName),
-          context);
+      // createFile(
+      //     '$projectName/lib/$baseDir/$moduleName/${moduleName}_service.dart',
+      //     generateServiceTemplate(moduleName),
+      //     context);
     }
   }
 }

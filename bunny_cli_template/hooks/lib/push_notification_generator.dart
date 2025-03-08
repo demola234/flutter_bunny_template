@@ -7,7 +7,7 @@ import 'package:mason/mason.dart';
 void generatePushNotificationSystem(
     HookContext context, String projectName, List<dynamic> modules) {
   // Check if Notifications is in the selected modules
-  if (!modules.contains('Notifications')) {
+  if (!modules.contains('Push Notification')) {
     context.logger.info(
         'Notifications module not selected, skipping push notification system generation');
     return;
@@ -691,12 +691,10 @@ void _addFirebaseDependencies(HookContext context, String projectName) {
   // Check if firebase dependencies are already added
   if (!content.contains('firebase_messaging:') ||
       !content.contains('flutter_local_notifications:')) {
-    // Find the end of the dependencies section
-    final dependenciesMatch =
-        RegExp(r'dependencies:\s*\n((\s{2}[\w_]+:.*\n)+)').firstMatch(content);
-
-    if (dependenciesMatch != null) {
-      final endOfDependencies = dependenciesMatch.end;
+    // Find the position to insert the dependencies
+    final sdkDepIndex = content.indexOf('sdk: flutter');
+    if (sdkDepIndex != -1) {
+      final insertPoint = content.indexOf('\n', sdkDepIndex) + 1;
 
       // Firebase dependencies to add
       final firebaseDependencies = '''
@@ -704,12 +702,13 @@ void _addFirebaseDependencies(HookContext context, String projectName) {
   # Firebase dependencies for push notifications
   firebase_core: ^2.15.0
   firebase_messaging: ^14.6.5
-  flutter_local_notifications: ^15.1.0+1''';
+  flutter_local_notifications: ^15.1.0+1
+  ''';
 
       // Insert dependencies
-      content = content.substring(0, endOfDependencies) +
+      content = content.substring(0, insertPoint) +
           firebaseDependencies +
-          content.substring(endOfDependencies);
+          content.substring(insertPoint);
 
       // Write updated content back to file
       pubspecFile.writeAsStringSync(content);
@@ -744,7 +743,7 @@ void _updateMainForNotifications(HookContext context, String projectName) {
       final insertPosition = lastImportMatch.end;
       content = content.substring(0, insertPosition) +
           "import 'package:firebase_core/firebase_core.dart';\n" +
-          "import 'package:firebase_messaging/firebase_messaging.dart';\n" +
+          // "import 'package:firebase_messaging/firebase_messaging.dart';\n" +
           "import 'package:$projectName/core/notifications/notification_handler.dart';\n" +
           content.substring(insertPosition);
     }

@@ -58,16 +58,24 @@ void _generateAppDartFile(
 
   // Determine imports based on modules and features
   final themeImport = modules.contains('Theme Manager')
-      ? "import 'package:$projectName/core/design_system/theme_extension/app_theme_extension.dart';\n" +
-          "import 'package:$projectName/core/design_system/theme_extension/theme_manager.dart';"
+      ? "import 'package:$projectName/core/design_system/theme_extension/app_theme_extension.dart';\n"
       : '';
 
   final localizationImport = modules.contains('Localization')
       ? "import 'package:$projectName/core/localization/generated/strings.dart';" +
+          "\nimport 'package:flutter_localizations/flutter_localizations.dart';" +
+          "\n" +
           (modules.contains('Localization') && stateManagement != 'default'
               ? "\nimport 'package:$projectName/core/localization/localization.dart';"
               : '')
       : '';
+
+  final getXLocalizationImport = modules.contains('Localization')
+      ? stateManagement == 'GetX'
+          ? "import 'package:get/get.dart';" +
+              "\nimport 'package:$projectName/core/design_system/theme_extension/theme_manager.dart';"
+          : ""
+      : "";
 
   // Determine home page based on features
   String homePageImport = '';
@@ -147,12 +155,11 @@ void _generateAppDartFile(
 
   final content = '''
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 $themeImport
 $localizationImport
+$getXLocalizationImport
 $homePageImport
 $routerImport
-
 $appClass
 ''';
 
@@ -229,10 +236,41 @@ String _generateStatelessAppClass(String projectName, String stateManagement,
   if (modules.contains('Localization')) {
     switch (stateManagement) {
       case 'Provider':
-      case 'Bloc':
+        localizationCode = '''
+      // Default localization configuration
+      supportedLocales: const [Locale('en', '')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],''';
       case 'BLoC':
+        localizationCode = '''
+      // Default localization configuration
+      supportedLocales: const [Locale('en', '')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],''';
       case 'Riverpod':
+        localizationCode = '''
+      // Default localization configuration
+      supportedLocales: const [Locale('en', '')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],''';
       case 'MobX':
+        localizationCode = '''
+      // Default localization configuration
+      supportedLocales: const [Locale('en', '')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],''';
       case 'Redux':
         localizationCode = '''
       // Localization configuration
@@ -251,16 +289,6 @@ String _generateStatelessAppClass(String projectName, String stateManagement,
       supportedLocales: Strings.supportedLocales,
       localizationsDelegates: Strings.localizationsDelegates,''';
     }
-  } else {
-    // No Localization module
-    localizationCode = '''
-      // Default localization configuration
-      supportedLocales: const [Locale('en', '')],
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],''';
   }
 
   String constructor = '';
@@ -294,10 +322,10 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: '$projectName',
+      title: '${projectName}',
       debugShowCheckedModeBanner: false,
       ${modules.contains('Theme Manager') ? '// Theme is managed by GetX controller\ntheme: AppTheme.light,\ndarkTheme: AppTheme.dark,\nthemeMode: Get.find<ThemeController>().themeMode,' : ''}
-      ${modules.contains('Localization') ? '// Localization is managed by GetX\nsupportedLocales: Strings.supportedLocales,\nlocalizationsDelegates: Strings.localizationsDelegates,\ntranslations: AppTranslations(),' : ''}
+      ${modules.contains('Localization') ? '// Localization is managed by GetX\nsupportedLocales: Strings.supportedLocales,\nlocalizationsDelegates: Strings.localizationsDelegates,' : ''}
       ${modules.contains('Routing') ? '// Routing configuration\ninitialRoute: \'/\',\ngetPages: AppPages.routes,' : 'home: $homePage,'}
     );
   }
@@ -320,7 +348,7 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '$projectName',
+      title: '${projectName}',
       debugShowCheckedModeBanner: false,
 $themeCode
 $localizationCode
@@ -720,7 +748,8 @@ class AppWidget extends StatelessWidget {
     content = '''
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_modular/flutter_modular.dart';
+
+
 $stateManagementImport
 $themeImport
 $localizationImport

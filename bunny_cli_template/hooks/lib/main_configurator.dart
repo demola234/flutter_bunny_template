@@ -19,20 +19,15 @@ void generateMainDart(
   mainContent = '''
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:async';
 ''';
-
-  if (modules.contains('Theme Manager')) {
-    mainContent += '''
-import 'package:flutter/services.dart';
-''';
-  }
 
   // Add imports based on state management
   if (stateManagement == 'Bloc') {
     mainContent += '''
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:$projectName/core/utils/state_management_observability.dart';
+
 ''';
   } else if (stateManagement == 'Provider') {
     mainContent += '''
