@@ -67,24 +67,65 @@ void integrateThemeManager(HookContext context, String projectName,
 /// Integrates theme manager with BLoC state management
 void _integrateWithBloc(HookContext context, String projectName, String content,
     File mainDartFile) {
-  // Add BlocProvider for ThemeCubit
-  if (content.contains('MultiBlocProvider(')) {
-    // If MultiBlocProvider exists, add ThemeCubit to the providers list
-    final providerPattern = RegExp(r'providers: \[\s*// Add your BLoCs here');
-    if (providerPattern.hasMatch(content)) {
-      content = content.replaceFirst(providerPattern,
-          'providers: [\n        // Theme management\n        BlocProvider(create: (_) => ThemeCubit()),\n        // Add your BLoCs here');
+  // First, check if theme imports are already present
+  bool hasThemeImports = content.contains('theme_manager.dart');
+  if (!hasThemeImports) {
+    // Add necessary imports for Bloc and theme management
+    final importPattern = RegExp(r'import .*;\n');
+    final lastImportMatch = importPattern.allMatches(content).lastOrNull;
+    if (lastImportMatch != null) {
+      final insertPosition = lastImportMatch.end;
+      content = content.substring(0, insertPosition) +
+          "import 'package:$projectName/core/design_system/theme_extension/theme_manager.dart';\n" +
+          content.substring(insertPosition);
     }
-  } else if (content.contains('BlocProvider(')) {
-    // If there's a single BlocProvider, convert it to MultiBlocProvider
-    content = content.replaceFirst('BlocProvider(',
-        'MultiBlocProvider(\n      providers: [\n        // Theme management\n        BlocProvider(create: (_) => ThemeCubit()),\n        ');
-    content = content.replaceFirst(
-        'child: const App(),', '],\n      child: const App(),');
-  } else if (content.contains('runApp(const App())')) {
-    // If no BlocProvider exists, add one
-    content = content.replaceFirst('runApp(const App())',
-        'runApp(\n    BlocProvider(\n      create: (_) => ThemeCubit(),\n      child: const App(),\n    )');
+  }
+
+  // Check for existing state management patterns
+  bool hasMultiBlocProvider = content.contains('MultiBlocProvider(');
+  bool hasSingleBlocProvider =
+      content.contains('BlocProvider(') && !hasMultiBlocProvider;
+  bool hasThemeCubit =
+      content.contains('BlocProvider(create: (_) => ThemeCubit())');
+
+  if (hasThemeCubit) {
+    // Already has theme cubit, nothing to do
+    context.logger.info('ThemeCubit already added to providers');
+  } else if (hasMultiBlocProvider) {
+    // Find a safe place to insert the ThemeCubit provider
+    final providersStart =
+        content.indexOf('providers: [', content.indexOf('MultiBlocProvider('));
+    if (providersStart != -1) {
+      final insertPoint = content.indexOf('[', providersStart) + 1;
+      content = content.substring(0, insertPoint) +
+          '\n        // Theme management\n        BlocProvider(create: (_) => ThemeCubit()),' +
+          content.substring(insertPoint);
+    }
+  } else if (hasSingleBlocProvider) {
+    // Convert single BlocProvider to MultiBlocProvider safely
+    final blocProviderStart = content.indexOf('BlocProvider(');
+    final blocProviderEnd = findClosingParenthesis(
+        content, blocProviderStart + 'BlocProvider('.length);
+
+    if (blocProviderEnd != -1) {
+      final blocProviderContent =
+          content.substring(blocProviderStart, blocProviderEnd + 1);
+      content = content.replaceFirst(
+          blocProviderContent,
+          'MultiBlocProvider(\n      providers: [\n        // Theme management\n        BlocProvider(create: (_) => ThemeCubit()),\n        ' +
+              blocProviderContent.substring(
+                  'BlocProvider('.length, blocProviderContent.length - 1) +
+              ',\n      ],\n      child: const App(),\n    )');
+    }
+  } else {
+    // No existing BlocProvider, add a new one
+    final runAppPattern = RegExp(r'runApp\(\s*(const)?\s*App\(\)\s*\);');
+    if (runAppPattern.hasMatch(content)) {
+      content = content.replaceFirstMapped(
+          runAppPattern,
+          (match) =>
+              'runApp(\n    BlocProvider(\n      create: (_) => ThemeCubit(),\n      child: ${match.group(1) ?? ''} App(),\n    )\n  );');
+    }
   }
 
   // Update App widget to use ThemeCubit
@@ -92,6 +133,22 @@ void _integrateWithBloc(HookContext context, String projectName, String content,
 
   // Write updated content back to file
   mainDartFile.writeAsStringSync(content);
+}
+
+// Helper function to find the closing parenthesis for a function call
+int findClosingParenthesis(String text, int openParenIndex) {
+  int depth = 1;
+  for (int i = openParenIndex; i < text.length; i++) {
+    if (text[i] == '(') {
+      depth++;
+    } else if (text[i] == ')') {
+      depth--;
+      if (depth == 0) {
+        return i;
+      }
+    }
+  }
+  return -1; // Not found
 }
 
 /// Integrates theme manager with Provider state management

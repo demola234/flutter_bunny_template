@@ -100,7 +100,8 @@ void run(HookContext context) {
   generateErrorHandling(context, projectName, architecture);
 
   // Generate localization system if selected
-  generateLocalizationSystem(context, projectName, modules);
+  generateLocalizationSystem(
+      context, projectName, modules, stateManagement, architecture);
 
   context.logger.success('Project structure created successfully!');
 }
@@ -180,7 +181,6 @@ void createModuleStructures(HookContext context, String projectName,
     if (!directory.existsSync()) {
       directory.createSync(recursive: true);
       context.logger.info('Created module directory: lib/$baseDir/$moduleName');
-
     }
   }
 }

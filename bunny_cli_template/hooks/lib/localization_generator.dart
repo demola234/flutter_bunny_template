@@ -4,7 +4,7 @@ import 'package:mason/mason.dart';
 
 /// Generates localization system if Localization module is selected
 void generateLocalizationSystem(
-    HookContext context, String projectName, List<dynamic> modules) {
+    HookContext context, String projectName, List<dynamic> modules, String stateManagement, String architecture) {
   // Check if Localization is in the selected modules
   if (!modules.contains('Localization')) {
     context.logger.info(
@@ -27,6 +27,8 @@ void generateLocalizationSystem(
       context.logger.info('Created directory: $dir');
     }
   }
+  generateCompleteLocalizationSystem(
+      context, projectName, stateManagement, architecture);
 
   // Generate localization files
   _generateLocalizationFile(context, projectName);
@@ -44,7 +46,7 @@ void generateLocalizationSystem(
   _updatePubspecForLocalization(context, projectName);
 
   // Update main.dart to initialize localization
-  // _updateMainForLocalization(context, projectName);
+  _updateMainForLocalization(context, projectName);
 
   context.logger.success('Localization system generated successfully!');
 }

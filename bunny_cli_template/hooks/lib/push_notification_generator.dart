@@ -64,45 +64,49 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter/foundation.dart';
 
 import '../models/push_notification_model.dart';
 import 'local_notification_service.dart';
+
 
 /// Service to handle Firebase Cloud Messaging (FCM) operations
 class FCMService {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   final LocalNotificationService _localNotificationService;
-  final List<Function(PushNotificationModel)> _onNotificationReceivedListeners = [];
-  
+  final List<Function(PushNotificationModel)> _onNotificationReceivedListeners =
+      [];
+
   FCMService(this._localNotificationService);
-  
+
   /// Initialize FCM service
-Future<void> initialize() async {
-  await _requestPermissions();
-  await _setupForegroundNotifications();
-  await _setupBackgroundAndTerminatedNotifications();
-  await _setupOnMessageOpenedApp();
-  
-  try {
-    // Get FCM token with error handling
-    String? token = await _firebaseMessaging.getToken();
-    if (token != null) {
-      debugPrint('FCM Token: token');
-    } else {
-      debugPrint('Failed to get FCM token');
+  /// Initialize FCM service with improved error handling
+  Future<void> initialize() async {
+    await _requestPermissions();
+    await _setupForegroundNotifications();
+    await _setupBackgroundAndTerminatedNotifications();
+    await _setupOnMessageOpenedApp();
+
+    try {
+      // Get FCM token with error handling
+      String? token = await getToken();
+      if (token != null) {
+        debugPrint('FCM Token: \$'token'');
+      } else {
+        debugPrint('Failed to get FCM token - notifications may be limited');
+      }
+    } catch (e) {
+      debugPrint('Error during FCM initialization: \$e');
+      // Continue execution even if token retrieval fails
     }
-    
+
     // Listen for token refreshes
     _firebaseMessaging.onTokenRefresh.listen((newToken) {
-      debugPrint('FCM Token refreshed: newToken');
+      debugPrint('FCM Token refreshed: \$newToken');
       // TODO: Send this token to your server
     });
-  } catch (e) {
-    debugPrint('Error getting FCM token: e');
-    // Continue execution even if token retrieval fails
   }
-}
-  
+
   /// Request notification permissions
   Future<void> _requestPermissions() async {
     NotificationSettings settings = await _firebaseMessaging.requestPermission(
@@ -114,10 +118,10 @@ Future<void> initialize() async {
       provisional: false,
       sound: true,
     );
-    
+
     debugPrint('FCM permission status: \${settings.authorizationStatus}');
   }
-  
+
   /// Setup handling of foreground notifications
   Future<void> _setupForegroundNotifications() async {
     // Handle foreground messages
@@ -126,52 +130,54 @@ Future<void> initialize() async {
       debugPrint('Message data: \${message.data}');
 
       if (message.notification != null) {
-        debugPrint('Message also contained a notification: \${message.notification}');
-        
+        debugPrint(
+            'Message also contained a notification: \${message.notification}');
+
         final notification = PushNotificationModel(
           title: message.notification?.title ?? 'New Notification',
           body: message.notification?.body ?? '',
           payload: json.encode(message.data),
         );
-        
+
         // Show local notification
         _localNotificationService.showNotification(notification);
-        
+
         // Notify listeners
         _notifyListeners(notification);
       }
     });
   }
-  
+
   /// Setup handling of background and terminated notifications
   Future<void> _setupBackgroundAndTerminatedNotifications() async {
     // Check if app was opened from a terminated state
-    RemoteMessage? initialMessage = await _firebaseMessaging.getInitialMessage();
+    RemoteMessage? initialMessage =
+        await _firebaseMessaging.getInitialMessage();
     if (initialMessage != null) {
       _handleMessage(initialMessage);
     }
   }
-  
+
   /// Setup handling of notifications when app is opened
   Future<void> _setupOnMessageOpenedApp() async {
     // Handle when the app is opened from a background state
     FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
   }
-  
+
   /// Handle received message
   void _handleMessage(RemoteMessage message) {
     debugPrint('Handling FCM message: \${message.messageId}');
-    
+
     if (message.notification != null) {
       final notification = PushNotificationModel(
         title: message.notification?.title ?? 'New Notification',
         body: message.notification?.body ?? '',
         payload: json.encode(message.data),
       );
-      
+
       // Notify listeners
       _notifyListeners(notification);
-      
+
       // TODO: Navigate to specific screen based on data if needed
       // Example:
       // if (message.data.containsKey('type')) {
@@ -181,32 +187,89 @@ Future<void> initialize() async {
       // }
     }
   }
-  
+
   /// Subscribe to a topic
   Future<void> subscribeToTopic(String topic) async {
     await _firebaseMessaging.subscribeToTopic(topic);
   }
-  
+
   /// Unsubscribe from a topic
   Future<void> unsubscribeFromTopic(String topic) async {
     await _firebaseMessaging.unsubscribeFromTopic(topic);
   }
-  
+
   /// Get the FCM token
+  /// Get the FCM token with improved iOS support
   Future<String?> getToken() async {
-    return await _firebaseMessaging.getToken();
+    try {
+      if (Platform.isIOS) {
+        // For iOS, first check APNS token explicitly
+        final apnsToken = await _firebaseMessaging.getAPNSToken();
+
+        if (apnsToken == null) {
+          debugPrint('APNS token is null, iOS push notifications may not work');
+
+          // iOS simulator doesn't support push notifications
+          if (Platform.isIOS && !await _isPhysicalDevice()) {
+            debugPrint(
+                'Running on iOS simulator - push notifications are not fully supported');
+            return 'simulator-token-not-available';
+          }
+
+          // On physical devices, wait a bit and try again
+          await Future.delayed(const Duration(seconds: 1));
+          final retryApnsToken = await _firebaseMessaging.getAPNSToken();
+
+          if (retryApnsToken == null) {
+            debugPrint('APNS token still null after retry');
+            return null;
+          }
+        }
+      }
+
+      // Now try to get FCM token
+      return await _firebaseMessaging.getToken();
+    } catch (e) {
+      debugPrint('Error getting FCM token: \$e');
+      return null;
+    }
   }
-  
+
+  /// Check if the app is running on a physical device
+  Future<bool> _isPhysicalDevice() async {
+    try {
+      // This is a simplified check - in production, use a package like 'device_info_plus'
+      // to more accurately determine if the device is physical
+      return !bool.fromEnvironment('dart.vm.product');
+    } catch (e) {
+      return false;
+    }
+  }
+
+
+  /// Check if the app is running on a physical device
+  Future<bool> _isPhysicalDevice() async {
+    try {
+      // This is a simplified check - in production, use a package like 'device_info_plus'
+      // to more accurately determine if the device is physical
+      return !bool.fromEnvironment('dart.vm.product');
+    } catch (e) {
+      return false;
+    }
+  }
+
   /// Add a notification received listener
-  void addOnNotificationReceivedListener(Function(PushNotificationModel) listener) {
+  void addOnNotificationReceivedListener(
+      Function(PushNotificationModel) listener) {
     _onNotificationReceivedListeners.add(listener);
   }
-  
+
   /// Remove a notification received listener
-  void removeOnNotificationReceivedListener(Function(PushNotificationModel) listener) {
+  void removeOnNotificationReceivedListener(
+      Function(PushNotificationModel) listener) {
     _onNotificationReceivedListeners.remove(listener);
   }
-  
+
   /// Notify listeners of a new notification
   void _notifyListeners(PushNotificationModel notification) {
     for (var listener in _onNotificationReceivedListeners) {
@@ -220,34 +283,34 @@ Future<void> initialize() async {
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // Need to initialize Firebase before using it
   await Firebase.initializeApp();
-  
+
   debugPrint('Handling background message: \${message.messageId}');
-  
+
   // Initialize FlutterLocalNotificationsPlugin
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = 
-    FlutterLocalNotificationsPlugin();
-    
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
   const AndroidInitializationSettings initializationSettingsAndroid =
-    AndroidInitializationSettings('@mipmap/ic_launcher');
-    
+      AndroidInitializationSettings('@mipmap/ic_launcher');
+
   const InitializationSettings initializationSettings =
-    InitializationSettings(android: initializationSettingsAndroid);
-    
+      InitializationSettings(android: initializationSettingsAndroid);
+
   await flutterLocalNotificationsPlugin.initialize(initializationSettings);
-  
+
   // Show notification if there is a notification payload
   if (message.notification != null) {
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
-      AndroidNotificationDetails(
-        'high_importance_channel',
-        'High Importance Notifications',
-        importance: Importance.max,
-        priority: Priority.high,
-      );
-      
+        AndroidNotificationDetails(
+      'high_importance_channel',
+      'High Importance Notifications',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+
     const NotificationDetails platformChannelSpecifics =
-      NotificationDetails(android: androidPlatformChannelSpecifics);
-      
+        NotificationDetails(android: androidPlatformChannelSpecifics);
+
     await flutterLocalNotificationsPlugin.show(
       message.hashCode,
       message.notification?.title,
@@ -282,17 +345,35 @@ class NotificationHandler {
   late final LocalNotificationService _localNotificationService;
   
   /// Initialize notification services
-  Future<void> initialize() async {
-    // Setup local notifications first
-    _localNotificationService = LocalNotificationService();
-    await _localNotificationService.initialize();
-    
-    // Setup FCM service
-    _fcmService = FCMService(_localNotificationService);
-    await _fcmService.initialize();
-    
-    // Register background message handler
-    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+Future<bool> initialize() async {
+    try {
+      // Setup local notifications first
+      _localNotificationService = LocalNotificationService();
+      await _localNotificationService.initialize();
+
+      // Setup FCM service
+      _fcmService = FCMService(_localNotificationService);
+      await _fcmService.initialize();
+
+      // Register background message handler
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
+      return true;
+    } catch (e) {
+      debugPrint('Error initializing notification services: \$e');
+      // Continue with app initialization even if notifications fail
+      return false;
+    }
+  }
+
+  /// Get FCM token with error handling
+  Future<String?> getFCMToken() async {
+    try {
+      return await _fcmService.getToken();
+    } catch (e) {
+      debugPrint('Error in getFCMToken: \$e');
+      return 'Error: \$e';
+    }
   }
   
   /// Show a local notification
@@ -743,6 +824,8 @@ void _addFirebaseDependencies(HookContext context, String projectName) {
 /// Updates Android and iOS configurations for push notifications
 void _configureNotificationsForPlatforms(
     HookContext context, String projectName) {
+  // Update iOS Info.plist
+  _updateIOSInfoPlist(context, projectName);
   // Update Android manifest
   _updateAndroidManifest(context, projectName);
 
@@ -751,6 +834,102 @@ void _configureNotificationsForPlatforms(
 
   // Add NSUserTrackingUsageDescription to Info.plist (already handled in _generateInfoPlistFile)
   context.logger.success('Configured push notifications for both platforms');
+}
+
+void _updateIOSInfoPlist(HookContext context, String projectName) {
+  final infoPlistPath = '$projectName/ios/Runner/Info.plist';
+  final infoPlistFile = File(infoPlistPath);
+
+  try {
+    // Check if file exists
+    if (!infoPlistFile.existsSync()) {
+      context.logger.warn('Info.plist not found at $infoPlistPath');
+      return;
+    }
+
+    String content = infoPlistFile.readAsStringSync();
+    bool modified = false;
+
+    // Add UIBackgroundModes if not already present
+    if (!content.contains('<key>UIBackgroundModes</key>')) {
+      // Find the position to insert - before the closing dict tag
+      final insertPoint = content.lastIndexOf('</dict>');
+      if (insertPoint != -1) {
+        final backgroundModes = '''
+  <key>UIBackgroundModes</key>
+  <array>
+    <string>fetch</string>
+    <string>processing</string>
+    <string>remote-notification</string>
+  </array>
+''';
+        content = content.substring(0, insertPoint) +
+            backgroundModes +
+            content.substring(insertPoint);
+        modified = true;
+      }
+    }
+
+    //  Add FirebaseAppDelegateProxyEnabled if not already present
+    if (!content.contains('<key>FirebaseAppDelegateProxyEnabled</key>')) {
+      // Find the position to insert - before the closing dict tag
+      final insertPoint = content.lastIndexOf('</dict>');
+      if (insertPoint != -1) {
+        final firebaseProxySetting = '''
+  <key>FirebaseAppDelegateProxyEnabled</key>
+  <false/>
+''';
+        content = content.substring(0, insertPoint) +
+            firebaseProxySetting +
+            content.substring(insertPoint);
+        modified = true;
+      }
+    }
+
+    // Add NSUserTrackingUsageDescription if not already present
+    if (!content.contains('<key>NSUserTrackingUsageDescription</key>')) {
+      // Find the position to insert - before the closing dict tag
+      final insertPoint = content.lastIndexOf('</dict>');
+      if (insertPoint != -1) {
+        final userTrackingDescription = '''
+  <key>NSUserTrackingUsageDescription</key>
+  <string>This app uses push notifications to enhance user experience.</string>
+''';
+        content = content.substring(0, insertPoint) +
+            userTrackingDescription +
+            content.substring(insertPoint);
+        modified = true;
+      }
+    }
+
+    // Add FirebaseMessagingAutoInitEnabled if not already present
+    if (!content.contains('<key>FirebaseMessagingAutoInitEnabled</key>')) {
+      // Find the position to insert - before the closing dict tag
+      final insertPoint = content.lastIndexOf('</dict>');
+      if (insertPoint != -1) {
+        final firebaseMessagingSetting = '''
+  <key>FirebaseMessagingAutoInitEnabled</key>
+  <false/>
+''';
+        content = content.substring(0, insertPoint) +
+            firebaseMessagingSetting +
+            content.substring(insertPoint);
+        modified = true;
+      }
+    }
+
+    // Write back only if modifications were made
+    if (modified) {
+      infoPlistFile.writeAsStringSync(content);
+      context.logger
+          .success('Updated Info.plist with required notification settings');
+    } else {
+      context.logger
+          .info('Info.plist already has required notification settings');
+    }
+  } catch (e) {
+    context.logger.err('Failed to update Info.plist: $e');
+  }
 }
 
 void _updateAndroidManifest(HookContext context, String projectName) {
@@ -835,14 +1014,16 @@ void _updateIOSAppDelegate(HookContext context, String projectName) {
   final appDelegatePath = '$projectName/ios/Runner/AppDelegate.swift';
   final appDelegateFile = File(appDelegatePath);
 
-  // Create parent directories if they don't exist
-  final appDelegateDir = Directory('$projectName/ios/Runner');
-  if (!appDelegateDir.existsSync()) {
-    appDelegateDir.createSync(recursive: true);
-  }
+  try {
+    // Create parent directories if they don't exist
+    final appDelegateDir = Directory('$projectName/ios/Runner');
+    if (!appDelegateDir.existsSync()) {
+      appDelegateDir.createSync(recursive: true);
+      context.logger.info('Created directory: ios/Runner');
+    }
 
-  // Create AppDelegate.swift with notification support
-  final appDelegateContent = '''import Flutter
+    // Define the notification-enabled AppDelegate content
+    final appDelegateContent = '''import Flutter
 import UIKit
 import flutter_local_notifications
 
@@ -866,9 +1047,27 @@ import flutter_local_notifications
 }
 ''';
 
-  appDelegateFile.writeAsStringSync(appDelegateContent);
-  context.logger
-      .info('Created iOS AppDelegate.swift with notification support');
+    // Check if file exists and handle appropriately
+    if (appDelegateFile.existsSync()) {
+      final existingContent = appDelegateFile.readAsStringSync();
+
+      // Only overwrite if it doesn't already have notification code
+      if (!existingContent.contains('flutter_local_notifications')) {
+        appDelegateFile.writeAsStringSync(appDelegateContent);
+        context.logger
+            .info('Updated iOS AppDelegate.swift with notification support');
+      } else {
+        context.logger
+            .info('iOS AppDelegate.swift already has notification support');
+      }
+    } else {
+      appDelegateFile.writeAsStringSync(appDelegateContent);
+      context.logger
+          .info('Created iOS AppDelegate.swift with notification support');
+    }
+  } catch (e) {
+    context.logger.err('Failed to update iOS AppDelegate.swift: $e');
+  }
 }
 
 /// Updates main.dart to initialize Firebase and FCM
