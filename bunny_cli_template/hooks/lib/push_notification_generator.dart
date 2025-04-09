@@ -30,6 +30,12 @@ void generatePushNotificationSystem(
     }
   }
 
+  // Generate iOS Info.plist with notification permissions
+  // generateInfoPlistFile(context, projectName);
+
+  // Update iOS and Android platform configurations
+  _configureNotificationsForPlatforms(context, projectName);
+
   // Generate notification files
   _generateFcmServiceFile(context, projectName);
   _generateNotificationHandlerFile(context, projectName);
@@ -71,22 +77,31 @@ class FCMService {
   FCMService(this._localNotificationService);
   
   /// Initialize FCM service
-  Future<void> initialize() async {
-    await _requestPermissions();
-    await _setupForegroundNotifications();
-    await _setupBackgroundAndTerminatedNotifications();
-    await _setupOnMessageOpenedApp();
-    
-    // Get FCM token
+Future<void> initialize() async {
+  await _requestPermissions();
+  await _setupForegroundNotifications();
+  await _setupBackgroundAndTerminatedNotifications();
+  await _setupOnMessageOpenedApp();
+  
+  try {
+    // Get FCM token with error handling
     String? token = await _firebaseMessaging.getToken();
-    debugPrint('FCM Token: \$token');
+    if (token != null) {
+      debugPrint('FCM Token: token');
+    } else {
+      debugPrint('Failed to get FCM token');
+    }
     
     // Listen for token refreshes
     _firebaseMessaging.onTokenRefresh.listen((newToken) {
-      debugPrint('FCM Token refreshed: \$newToken');
+      debugPrint('FCM Token refreshed: newToken');
       // TODO: Send this token to your server
     });
+  } catch (e) {
+    debugPrint('Error getting FCM token: e');
+    // Continue execution even if token retrieval fails
   }
+}
   
   /// Request notification permissions
   Future<void> _requestPermissions() async {
@@ -387,59 +402,57 @@ import '../models/push_notification_model.dart';
 
 /// Service to handle local notifications using flutter_local_notifications plugin
 class LocalNotificationService {
-  final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin = 
-    FlutterLocalNotificationsPlugin();
-  
+  final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
   final List<Function(String?)> _onNotificationTapListeners = [];
-  
+
   /// Initialize local notification service
   Future<void> initialize() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
-      
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+
     final DarwinInitializationSettings initializationSettingsIOS =
-      DarwinInitializationSettings(
-        requestAlertPermission: true,
-        requestBadgePermission: true,
-        requestSoundPermission: true,
-        onDidReceiveLocalNotification: (id, title, body, payload) async {
-          debugPrint('Received iOS local notification: \$id');
-        },
-      );
-      
-    final InitializationSettings initializationSettings = InitializationSettings(
+        DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+
+    final InitializationSettings initializationSettings =
+        InitializationSettings(
       android: initializationSettingsAndroid,
       iOS: initializationSettingsIOS,
     );
-    
+
     await _flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: _onDidReceiveNotificationResponse,
     );
   }
-  
+
   /// Show a notification
   Future<void> showNotification(PushNotificationModel notification) async {
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
-      AndroidNotificationDetails(
-        'high_importance_channel',
-        'High Importance Notifications',
-        importance: Importance.max,
-        priority: Priority.high,
-      );
-      
+        AndroidNotificationDetails(
+      'high_importance_channel',
+      'High Importance Notifications',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+
     const DarwinNotificationDetails iOSPlatformChannelSpecifics =
-      DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      );
-      
+        DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
     const NotificationDetails platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,
       iOS: iOSPlatformChannelSpecifics,
     );
-    
+
     await _flutterLocalNotificationsPlugin.show(
       notification.hashCode,
       notification.title,
@@ -448,43 +461,44 @@ class LocalNotificationService {
       payload: notification.payload,
     );
   }
-  
+
   /// Handle notification response when tapped
   void _onDidReceiveNotificationResponse(NotificationResponse response) {
     final String? payload = response.payload;
-    debugPrint('Notification tapped with payload: \$payload');
-    
+
     // Notify listeners
     for (var listener in _onNotificationTapListeners) {
       listener(payload);
     }
   }
-  
+
   /// Add notification tap listener
   void addOnNotificationTapListener(Function(String?) listener) {
     _onNotificationTapListeners.add(listener);
   }
-  
+
   /// Remove notification tap listener
   void removeOnNotificationTapListener(Function(String?) listener) {
     _onNotificationTapListeners.remove(listener);
   }
-  
+
   /// Get pending notification requests
-  Future<List<PendingNotificationRequest>> getPendingNotificationRequests() async {
+  Future<List<PendingNotificationRequest>>
+      getPendingNotificationRequests() async {
     return await _flutterLocalNotificationsPlugin.pendingNotificationRequests();
   }
-  
+
   /// Cancel a specific notification
   Future<void> cancelNotification(int id) async {
     await _flutterLocalNotificationsPlugin.cancel(id);
   }
-  
+
   /// Cancel all notifications
   Future<void> cancelAllNotifications() async {
     await _flutterLocalNotificationsPlugin.cancelAll();
   }
 }
+
 ''';
 
   final file = File(filePath);
@@ -687,39 +701,174 @@ void _addFirebaseDependencies(HookContext context, String projectName) {
   }
 
   String content = pubspecFile.readAsStringSync();
+  bool modified = false;
 
-  // Check if firebase dependencies are already added
-  if (!content.contains('firebase_messaging:') ||
-      !content.contains('flutter_local_notifications:')) {
+  // Add dependencies that are missing
+  List<String> missingDependencies = [];
+  if (!content.contains('firebase_core:'))
+    missingDependencies.add('firebase_core: ^3.10.0');
+  if (!content.contains('firebase_messaging:'))
+    missingDependencies.add('firebase_messaging: ^15.1.6');
+  if (!content.contains('flutter_local_notifications:'))
+    missingDependencies.add('flutter_local_notifications: ^18.0.0');
+
+  if (missingDependencies.isNotEmpty) {
     // Find the position to insert the dependencies
     final sdkDepIndex = content.indexOf('sdk: flutter');
     if (sdkDepIndex != -1) {
       final insertPoint = content.indexOf('\n', sdkDepIndex) + 1;
 
-      // Firebase dependencies to add
-      final firebaseDependencies = '''
+      final firebaseDependencies =
+          '\n  # Firebase dependencies for push notifications\n  ' +
+              missingDependencies.join('\n  ') +
+              '\n';
 
-  # Firebase dependencies for push notifications
-  firebase_core: ^2.15.0
-  firebase_messaging: ^14.6.5
-  flutter_local_notifications: ^15.1.0+1
-  ''';
-
-      // Insert dependencies
       content = content.substring(0, insertPoint) +
           firebaseDependencies +
           content.substring(insertPoint);
 
-      // Write updated content back to file
-      pubspecFile.writeAsStringSync(content);
-      context.logger.success('Added Firebase dependencies to pubspec.yaml');
-    } else {
-      context.logger
-          .warn('Could not find dependencies section in pubspec.yaml');
+      modified = true;
     }
+  }
+
+  if (modified) {
+    pubspecFile.writeAsStringSync(content);
+    context.logger
+        .success('Added missing Firebase dependencies to pubspec.yaml');
   } else {
     context.logger.info('Firebase dependencies already exist in pubspec.yaml');
   }
+}
+
+/// Updates Android and iOS configurations for push notifications
+void _configureNotificationsForPlatforms(
+    HookContext context, String projectName) {
+  // Update Android manifest
+  _updateAndroidManifest(context, projectName);
+
+  // Update iOS AppDelegate
+  _updateIOSAppDelegate(context, projectName);
+
+  // Add NSUserTrackingUsageDescription to Info.plist (already handled in _generateInfoPlistFile)
+  context.logger.success('Configured push notifications for both platforms');
+}
+
+void _updateAndroidManifest(HookContext context, String projectName) {
+  final manifestPath = '$projectName/android/app/src/main/AndroidManifest.xml';
+  final manifestFile = File(manifestPath);
+
+  // Create parent directories if they don't exist
+  final manifestDir = Directory('$projectName/android/app/src/main');
+  if (!manifestDir.existsSync()) {
+    manifestDir.createSync(recursive: true);
+  }
+
+  bool fileExists = manifestFile.existsSync();
+  String manifestContent = fileExists
+      ? manifestFile.readAsStringSync()
+      : '''<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application
+        android:label="@string/app_name"
+        android:name="\${applicationName}"
+        android:icon="@mipmap/ic_launcher">
+        <!-- Activity and other elements will be here -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+    </application>
+</manifest>
+''';
+
+  bool modified = false;
+
+  // Add notification permission if not already present
+  if (!manifestContent.contains(
+      '<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>')) {
+    // Add permission
+    if (manifestContent.contains('<manifest')) {
+      final int manifestTagEnd =
+          manifestContent.indexOf('>', manifestContent.indexOf('<manifest'));
+      manifestContent = manifestContent.substring(0, manifestTagEnd + 1) +
+          '\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>' +
+          manifestContent.substring(manifestTagEnd + 1);
+      modified = true;
+    }
+  }
+
+  // Add receivers if needed
+  if (!manifestContent.contains(
+      'com.dexterous.flutterlocalnotifications.receivers.NotificationReceiver')) {
+    final int applicationEndIndex =
+        manifestContent.lastIndexOf('</application>');
+    if (applicationEndIndex != -1) {
+      final String receiversContent = '''
+        <receiver android:name="com.dexterous.flutterlocalnotifications.receivers.NotificationReceiver" android:exported="true"/>
+        <receiver android:name="com.dexterous.flutterlocalnotifications.receivers.ScheduledNotificationReceiver" android:exported="true"/>
+        <receiver android:name="com.dexterous.flutterlocalnotifications.receivers.ActionReceiver" android:exported="true"/>
+''';
+      manifestContent = manifestContent.substring(0, applicationEndIndex) +
+          receiversContent +
+          manifestContent.substring(applicationEndIndex);
+      modified = true;
+    }
+  }
+
+  // Only write if content was modified or file didn't exist
+  if (modified || !fileExists) {
+    manifestFile.writeAsStringSync(manifestContent);
+    if (!fileExists) {
+      context.logger
+          .info('Created AndroidManifest.xml with notification permissions');
+    } else {
+      context.logger
+          .info('Updated AndroidManifest.xml with notification permissions');
+    }
+  } else {
+    context.logger
+        .info('AndroidManifest.xml already has notification permissions');
+  }
+}
+
+/// Updates iOS AppDelegate.swift with required code for notifications
+void _updateIOSAppDelegate(HookContext context, String projectName) {
+  final appDelegatePath = '$projectName/ios/Runner/AppDelegate.swift';
+  final appDelegateFile = File(appDelegatePath);
+
+  // Create parent directories if they don't exist
+  final appDelegateDir = Directory('$projectName/ios/Runner');
+  if (!appDelegateDir.existsSync()) {
+    appDelegateDir.createSync(recursive: true);
+  }
+
+  // Create AppDelegate.swift with notification support
+  final appDelegateContent = '''import Flutter
+import UIKit
+import flutter_local_notifications
+
+@main
+@objc class AppDelegate: FlutterAppDelegate {
+  override func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+  ) -> Bool {
+    FlutterLocalNotificationsPlugin.setPluginRegistrantCallback { (registry) in
+      GeneratedPluginRegistrant.register(with: registry)
+    }
+    
+    if #available(iOS 10.0, *) {
+      UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate
+    }
+    
+    GeneratedPluginRegistrant.register(with: self)
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+}
+''';
+
+  appDelegateFile.writeAsStringSync(appDelegateContent);
+  context.logger
+      .info('Created iOS AppDelegate.swift with notification support');
 }
 
 /// Updates main.dart to initialize Firebase and FCM
@@ -732,10 +881,10 @@ void _updateMainForNotifications(HookContext context, String projectName) {
   }
 
   String content = mainDartFile.readAsStringSync();
+  bool modified = false;
 
   // Add imports if not already present
-  if (!content.contains('firebase_core.dart') ||
-      !content.contains('firebase_messaging.dart')) {
+  if (!content.contains('firebase_core.dart')) {
     final importPattern = RegExp(r'import .*;\n');
     final lastImportMatch = importPattern.allMatches(content).lastOrNull;
 
@@ -743,30 +892,32 @@ void _updateMainForNotifications(HookContext context, String projectName) {
       final insertPosition = lastImportMatch.end;
       content = content.substring(0, insertPosition) +
           "import 'package:firebase_core/firebase_core.dart';\n" +
-          // "import 'package:firebase_messaging/firebase_messaging.dart';\n" +
           "import 'package:$projectName/core/notifications/notification_handler.dart';\n" +
           content.substring(insertPosition);
+      modified = true;
     }
   }
 
-  // Add Firebase initialization
+  // Add Firebase initialization if not already present
   if (!content.contains('Firebase.initializeApp')) {
     final mainFunction = content.indexOf('void main() async {');
-
     if (mainFunction != -1) {
-      // Get the index after the opening brace
       final insertPosition = content.indexOf('{', mainFunction) + 1;
-
       content = content.substring(0, insertPosition) +
           "\n  // Initialize Firebase\n" +
           "  await Firebase.initializeApp();\n\n" +
           "  // Initialize notification services\n" +
           "  await notificationHandler.initialize();\n" +
           content.substring(insertPosition);
+      modified = true;
     }
   }
 
-  // Write updated content back to file
-  mainDartFile.writeAsStringSync(content);
-  context.logger.success('Updated main.dart with Firebase initialization');
+  // Only write if content was modified
+  if (modified) {
+    mainDartFile.writeAsStringSync(content);
+    context.logger.success('Updated main.dart with Firebase initialization');
+  } else {
+    context.logger.info('main.dart already contains Firebase initialization');
+  }
 }

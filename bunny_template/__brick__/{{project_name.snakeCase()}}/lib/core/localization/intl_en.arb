@@ -1,4 +1,0 @@
-{
-  "appName": "{{project_name.sentenceCase(}}",
-  "description": "{{description.pascalCase()}}"
-}

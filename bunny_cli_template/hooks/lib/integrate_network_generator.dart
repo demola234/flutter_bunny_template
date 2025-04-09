@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:mason/mason.dart';
 
 /// Integrate the network layer with the main run function and update pubspec.yaml

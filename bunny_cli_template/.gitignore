@@ -10,3 +10,5 @@ pubspec.lock
 
 # Conventional directory for build outputs
 build/
+
+flutter_bunny/

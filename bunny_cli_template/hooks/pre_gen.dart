@@ -123,12 +123,12 @@ String _appId(HookContext context, {Platform? platform}) {
   }
   // Convert to a valid Android application ID
   if (platform == Platform.android) {
-    return applicationId.replaceAll('.', '_').toLowerCase();
+    return applicationId.replaceAll('_', '').toLowerCase();
   }
 
   // Convert to a valid iOS application ID
   if (platform == Platform.ios) {
-    return applicationId.replaceAll('.', '').toLowerCase();
+    return applicationId.replaceAll('_', '').toLowerCase();
   }
 
   return applicationId;
@@ -181,11 +181,6 @@ void createModuleStructures(HookContext context, String projectName,
       directory.createSync(recursive: true);
       context.logger.info('Created module directory: lib/$baseDir/$moduleName');
 
-      // Create a base file for the module
-      // createFile(
-      //     '$projectName/lib/$baseDir/$moduleName/${moduleName}_service.dart',
-      //     generateServiceTemplate(moduleName),
-      //     context);
     }
   }
 }
