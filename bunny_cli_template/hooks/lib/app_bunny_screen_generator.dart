@@ -107,7 +107,7 @@ class _FlutterBunnyScreenState extends State<FlutterBunnyScreen> {
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        ${hasLocalization ? _generateLanguageActionButton(stateManagement) : ''}
+        ${hasLocalization ? _generateLanguageActionButton(stateManagement, hasThemeManager) : ''}
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -861,7 +861,7 @@ String _generateLanguageActionButton(
                 ),
                 label: const Icon(Icons.arrow_drop_down, size: 20),
                 style: TextButton.styleFrom(
-                  foregroundColor: $themeColor,
+                 
                 ),
               );
             },
@@ -882,7 +882,7 @@ String _generateLanguageActionButton(
                 ),
                 label: const Icon(Icons.arrow_drop_down, size: 20),
                 style: TextButton.styleFrom(
-                  foregroundColor: $themeColor,
+                 
                 ),
               );
             },
@@ -902,7 +902,7 @@ String _generateLanguageActionButton(
                 ),
                 label: const Icon(Icons.arrow_drop_down, size: 20),
                 style: TextButton.styleFrom(
-                  foregroundColor: $themeColor,
+                 
                 ),
               );
             },
@@ -922,7 +922,7 @@ String _generateLanguageActionButton(
                 ),
                 label: const Icon(Icons.arrow_drop_down, size: 20),
                 style: TextButton.styleFrom(
-                  foregroundColor: $themeColor,
+                 
                 ),
               );
             },
@@ -943,7 +943,7 @@ String _generateLanguageActionButton(
                 ),
                 label: const Icon(Icons.arrow_drop_down, size: 20),
                 style: TextButton.styleFrom(
-                  foregroundColor: $themeColor,
+                 
                 ),
               );
             },
@@ -963,7 +963,7 @@ String _generateLanguageActionButton(
                 ),
                 label: const Icon(Icons.arrow_drop_down, size: 20),
                 style: TextButton.styleFrom(
-                  foregroundColor: $themeColor,
+                 
                 ),
               );
             },
