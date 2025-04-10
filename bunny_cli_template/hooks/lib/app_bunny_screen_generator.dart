@@ -627,7 +627,7 @@ String _generateThemeSection(String stateManagement) {
             ),
             const SizedBox(width: 12),
             Text(
-              context.l10n.theme ?? 'Theme',
+              context.l10n.theme,
               style: context.theme.fonts.headerLarger.copyWith(
                 fontSize: 20,
               ),
@@ -654,7 +654,7 @@ String _generateThemeSection(String stateManagement) {
                 _buildThemeModeButton(
                   ThemeModeEnum.light,
                   Icons.light_mode,
-                  context.l10n.lightMode ?? 'Light Mode',
+                  context.l10n.lightMode,
                 ),
                 const SizedBox(width: 12),
                 _buildThemeModeButton(
@@ -666,7 +666,7 @@ String _generateThemeSection(String stateManagement) {
                 _buildThemeModeButton(
                   ThemeModeEnum.system,
                   Icons.brightness_auto,
-                  context.l10n.systemMode ?? 'System Mode',
+                  context.l10n.systemMode,
                 ),
               ],
             ),
