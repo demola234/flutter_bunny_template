@@ -15,88 +15,93 @@ void generateMainDart(
   final mainFile = File('$projectName/lib/main.dart');
   String mainContent = '';
 
-  // Start with imports based on architecture and state management
-  mainContent = '''
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-''';
+  // Determine if Firebase is needed based on modules
+  final needsFirebase = modules.contains('Push Notification');
 
-  // Add imports based on state management
+  // Start with imports in the correct order
+  var imports = [
+    // Firebase should be first if used
+    needsFirebase ? "import 'package:firebase_core/firebase_core.dart';" : "",
+    "import 'package:flutter/material.dart';",
+    "import 'package:flutter/services.dart';",
+  ];
+
+  // Add architecture-specific imports
+  if (architecture == 'Clean Architecture' ||
+      architecture == 'MVVM' ||
+      architecture == 'MVC') {
+    imports.add("import 'package:flutter_dotenv/flutter_dotenv.dart';");
+  }
+
+  // Add state management imports
   if (stateManagement == 'Bloc') {
-    mainContent += '''
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hydrated_bloc/hydrated_bloc.dart';
-import 'package:$projectName/core/utils/state_management_observability.dart';
-
-''';
+    imports.add("import 'package:flutter_bloc/flutter_bloc.dart';");
+    imports.add("import 'package:hydrated_bloc/hydrated_bloc.dart';");
+    imports.add(
+        "import 'package:$projectName/core/utils/state_management_observability.dart';");
   } else if (stateManagement == 'Provider') {
-    mainContent += '''
-import 'package:provider/provider.dart';
-''';
+    imports.add("import 'package:provider/provider.dart';");
   } else if (stateManagement == 'Riverpod') {
-    mainContent += '''
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-''';
+    imports.add("import 'package:flutter_riverpod/flutter_riverpod.dart';");
   } else if (stateManagement == 'GetX') {
-    mainContent += '''
-import 'package:get/get.dart';
-''';
+    imports.add("import 'package:get/get.dart';");
   } else if (stateManagement == 'MobX') {
-    mainContent += '''
-import 'package:flutter_mobx/flutter_mobx.dart';
-''';
+    imports.add("import 'package:flutter_mobx/flutter_mobx.dart';");
   } else if (stateManagement == 'Redux') {
-    mainContent += '''
-import 'package:flutter_redux/flutter_redux.dart';
-import 'package:redux/redux.dart';
-import 'package:$projectName/core/redux/app_reducer.dart';
-import 'package:$projectName/core/redux/app_state.dart';
-import 'package:redux_thunk/redux_thunk.dart';
-''';
+    imports.add("import 'package:flutter_redux/flutter_redux.dart';");
+    imports.add("import 'package:redux/redux.dart';");
+    imports.add("import 'package:$projectName/core/redux/app_reducer.dart';");
+    imports.add("import 'package:$projectName/core/redux/app_state.dart';");
+    imports.add("import 'package:redux_thunk/redux_thunk.dart';");
   }
 
-  // Add architecture specific imports
-  if (architecture == 'Clean Architecture') {
-    mainContent += '''
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-
-''';
-  } else if (architecture == 'MVVM') {
-    mainContent += '''
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-''';
-  } else if (architecture == 'MVC') {
-    mainContent += '''
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-''';
-  } else if (architecture == 'Feature-Driven') {
-    mainContent += '''
-import 'package:flutter_modular/flutter_modular.dart';
-import 'package:$projectName/app/app_module.dart';
-import 'package:$projectName/app/app_widget.dart';
-''';
+  // Feature-Driven architecture imports
+  if (architecture == 'Feature-Driven') {
+    imports.add("import 'package:flutter_modular/flutter_modular.dart';");
+    imports.add("import 'package:$projectName/app/app_module.dart';");
+    imports.add("import 'package:$projectName/app/app_widget.dart';");
+  } else {
+    imports.add("import 'package:$projectName/app/app.dart';");
   }
 
-  // Import app widget based on architecture
-  if (architecture != 'Feature-Driven') {
-    mainContent += '''
-import 'package:$projectName/app/app.dart';
-''';
+  // Add notification handler import if needed
+  if (needsFirebase) {
+    imports.add(
+        "import 'package:$projectName/core/notifications/notification_handler.dart';");
   }
+
+  // Filter out empty imports and join them
+  mainContent =
+      imports.where((import) => import.isNotEmpty).join('\n') + '\n\n';
 
   // Main function declaration
   mainContent += '''
-
 void main() async {
+  // Initialize Flutter binding
   WidgetsFlutterBinding.ensureInitialized();
 ''';
 
-  if (architecture == 'Clean Architecture') {
+  // Firebase initialization should come first if needed
+  if (needsFirebase) {
     mainContent += '''
-  await dotenv.load(fileName: ".env");
+  // Initialize Firebase
+  await Firebase.initializeApp(
+// Uncomment the following line if you have a custom Firebase options file
+    // options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // Initialize notification services
+  await notificationHandler.initialize();
+
 ''';
-  } else if (architecture == 'MVVM') {
+  }
+
+  // Environment variables loading
+  if (architecture == 'Clean Architecture' ||
+      architecture == 'MVVM' ||
+      architecture == 'MVC') {
     mainContent += '''
+  // Load environment variables
   await dotenv.load(fileName: ".env");
 ''';
   }
@@ -104,7 +109,7 @@ void main() async {
   // Setup state management initialization
   if (stateManagement == 'Bloc') {
     mainContent += '''
-
+  // Initialize BLoC observer
   Bloc.observer = AppBlocObserver();
 ''';
   }

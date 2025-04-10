@@ -2,9 +2,9 @@ import 'dart:io';
 
 import 'package:mason/mason.dart';
 
-/// Generates localization system if Localization module is selected
-void generateLocalizationSystem(
-    HookContext context, String projectName, List<dynamic> modules, String stateManagement, String architecture) {
+/// Generates localization system for a Flutter project if Localization module is selected
+void generateLocalizationSystem(HookContext context, String projectName,
+    List<dynamic> modules, String stateManagement) {
   // Check if Localization is in the selected modules
   if (!modules.contains('Localization')) {
     context.logger.info(
@@ -15,9 +15,29 @@ void generateLocalizationSystem(
   context.logger.info('Generating localization system for $projectName');
 
   // Create directory structure
+  _createDirectoryStructure(context, projectName);
+
+  // Generate base localization files
+  _generateBaseFiles(context, projectName);
+
+  // Generate state management specific implementation
+  _generateStateManagementImpl(context, projectName, stateManagement);
+
+  // Update pubspec.yaml to add localization dependencies
+  _updatePubspecForLocalization(context, projectName);
+
+  // Update main.dart to initialize localization
+  _updateMainForLocalization(context, projectName, stateManagement);
+
+  context.logger.success('Localization system generated successfully!');
+}
+
+/// Creates the directory structure for localization
+void _createDirectoryStructure(HookContext context, String projectName) {
   final directories = [
     'lib/core/localization',
     'lib/core/localization/generated',
+    'lib/core/localization/l10n',
   ];
 
   for (final dir in directories) {
@@ -27,42 +47,74 @@ void generateLocalizationSystem(
       context.logger.info('Created directory: $dir');
     }
   }
-  generateCompleteLocalizationSystem(
-      context, projectName, stateManagement, architecture);
-
-  // Generate localization files
-  _generateLocalizationFile(context, projectName);
-  _generateL10nFile(context, projectName);
-  _generateL10nYamlFile(context, projectName);
-  _generateIntlEnArbFile(context, projectName);
-  _generateIntlEsArbFile(context, projectName);
-
-  // Generate generated files
-  _generateStringsDartFile(context, projectName);
-  _generateStringsEnDartFile(context, projectName);
-  _generateStringsEsDartFile(context, projectName);
-
-  // Update pubspec.yaml to add localization dependencies
-  _updatePubspecForLocalization(context, projectName);
-
-  // Update main.dart to initialize localization
-  _updateMainForLocalization(context, projectName);
-
-  context.logger.success('Localization system generated successfully!');
 }
 
-/// Generates the localization.dart file
+/// Generates base localization files
+void _generateBaseFiles(HookContext context, String projectName) {
+  // Generate localization.dart file
+  _generateLocalizationFile(context, projectName);
+
+  // Generate l10n configuration
+  _generateL10nFile(context, projectName);
+  _generateL10nYamlFile(context, projectName);
+
+  // Generate ARB files
+  _generateArbFiles(context, projectName);
+
+  // Generate language selector widget
+  _generateLanguageSelectorWidget(context, projectName);
+}
+
+/// Generates state management specific implementation
+void _generateStateManagementImpl(
+    HookContext context, String projectName, String stateManagement) {
+  switch (stateManagement) {
+    case 'Bloc':
+    case 'BLoC':
+      _generateBlocImplementation(context, projectName);
+      break;
+    case 'Provider':
+      _generateProviderImplementation(context, projectName);
+      break;
+    case 'Riverpod':
+      _generateRiverpodImplementation(context, projectName);
+      break;
+    case 'GetX':
+      _generateGetXImplementation(context, projectName);
+      break;
+    case 'MobX':
+      _generateMobXImplementation(context, projectName);
+      break;
+    case 'Redux':
+      _generateReduxImplementation(context, projectName);
+      break;
+    default:
+      _generateDefaultImplementation(context, projectName);
+  }
+}
+
+/// Generate the localization.dart file with extension methods
 void _generateLocalizationFile(HookContext context, String projectName) {
   final filePath = '$projectName/lib/core/localization/localization.dart';
+
+  // Generate extension method for strings
+  final stringExtensionMethod = '''
+  // Extension for easy access to localized strings
+  extension on BuildContext {
+    AppLocalizations get strings => l10n;
+  }''';
+
+  stringExtensionMethod;
+
   final content = '''
 import 'package:flutter/material.dart';
-
-import 'generated/strings.dart';
+import 'generated/app_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 /// Extension method to get localized strings easier
 extension LocalizationExtension on BuildContext {
   /// Get the translation strings instance
-  Strings get strings => Strings.of(this)!;
+  AppLocalizations get l10n => AppLocalizations.of(this)!;
 }
 
 /// Utility methods for localization
@@ -70,27 +122,41 @@ class Localization {
   Localization._();
   
   /// Get all available locales
-  static List<Locale> get supportedLocales => Strings.supportedLocales;
+  static List<Locale> get supportedLocales => AppLocalizations.supportedLocales;
   
   /// Get all localization delegates
-  static List<LocalizationsDelegate<dynamic>> get localizationDelegates => 
-      Strings.localizationsDelegates;
+  static List<LocalizationsDelegate<dynamic>> get localizationDelegates => [
+    AppLocalizations.delegate,
+    ...GlobalMaterialLocalizations.delegates,
+  ];
   
   /// Get a friendly display name for a locale
   static String getLanguageName(String languageCode) {
     switch (languageCode) {
       case 'es':
         return 'Español';
+      case 'fr':
+        return 'Français';
+      case 'de':
+        return 'Deutsch';
+      case 'ja':
+        return '日本語';
+      case 'zh':
+        return '中文';
+      case 'ar':
+        return 'العربية';
+      case 'pt':
+        return 'Português';
+      case 'ru':
+        return 'Русский';
+      case 'ko':
+        return '한국어';
+      case 'it':
+        return 'Italiano';
       case 'en':
       default:
         return 'English';
     }
-  }
-  
-  /// Get a display name for the current locale
-  static String getCurrentLanguageName(BuildContext context) {
-    final locale = Localizations.localeOf(context);
-    return getLanguageName(locale.languageCode);
   }
   
   /// Get a flag emoji for a language
@@ -98,9 +164,27 @@ class Localization {
     switch (languageCode) {
       case 'es':
         return '🇪🇸';
+      case 'fr':
+        return '🇫🇷';
+      case 'de':
+        return '🇩🇪';
+      case 'ja':
+        return '🇯🇵';
+      case 'zh':
+        return '🇨🇳';
+      case 'ar':
+        return '🇸🇦';
+      case 'pt':
+        return '🇧🇷';
+      case 'ru':
+        return '🇷🇺';
+      case 'ko':
+        return '🇰🇷';
+      case 'it':
+        return '🇮🇹';
       case 'en':
       default:
-        return '🇬🇧';
+        return '🇺🇸';
     }
   }
 }
@@ -111,29 +195,22 @@ class Localization {
   context.logger.info('Created file: $filePath');
 }
 
-/// Generates the l10n.dart file
+/// Generate the l10n.dart file with supported locales
 void _generateL10nFile(HookContext context, String projectName) {
-  final filePath = '$projectName/lib/core/localization/l10n.dart';
+  final filePath = '$projectName/lib/core/localization/l10n/l10n.dart';
   final content = '''
 import 'package:flutter/material.dart';
 
+/// Class to manage supported locales
 class L10n {
   L10n._();
   
-  static final all = [
-    const Locale('en'),
-    const Locale('es'),
+  /// All supported locales in the app
+  static const supportedLocales = [
+    Locale('en'),
+    Locale('es'),
+    // Add more locales as needed
   ];
-  
-  static String getFlag(String code) {
-    switch (code) {
-      case 'es':
-        return 'Spanish';
-      case 'en':
-      default:
-        return 'English';
-    }
-  }
 }
 ''';
 
@@ -142,15 +219,16 @@ class L10n {
   context.logger.info('Created file: $filePath');
 }
 
-/// Generates the l10n.yaml file
+/// Generate the l10n.yaml configuration file
 void _generateL10nYamlFile(HookContext context, String projectName) {
   final filePath = '$projectName/l10n.yaml';
   final content = '''
-arb-dir: lib/core/localization
+arb-dir: lib/core/localization/l10n
 output-dir: lib/core/localization/generated
-template-arb-file: intl_en.arb
-output-localization-file: strings.dart
-output-class: Strings
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+nullable-getter: false
 synthetic-package: false
 ''';
 
@@ -159,10 +237,11 @@ synthetic-package: false
   context.logger.info('Created file: $filePath');
 }
 
-/// Generates the intl_en.arb file with sample translations
-void _generateIntlEnArbFile(HookContext context, String projectName) {
-  final filePath = '$projectName/lib/core/localization/intl_en.arb';
-  final content = '''{
+/// Generate ARB files for English and Spanish
+void _generateArbFiles(HookContext context, String projectName) {
+  // English ARB file (template)
+  final enFilePath = '$projectName/lib/core/localization/l10n/app_en.arb';
+  final enContent = '''{
   "@@locale": "en",
   "appTitle": "My App",
   "@appTitle": {
@@ -235,18 +314,48 @@ void _generateIntlEnArbFile(HookContext context, String projectName) {
   "systemMode": "System Mode",
   "@systemMode": {
     "description": "System theme mode setting"
+  },
+  "notifications": "Notifications",
+  "@notifications": {
+    "description": "Notifications title"
+  },
+  "notificationSent": "Notification sent",
+  "@notificationSent": {
+    "description": "Message shown when notification is sent"
+  },
+  "enableNotifications": "Enable Notifications",
+  "@enableNotifications": {
+    "description": "Switch label for enabling notifications"
+  },
+  "receiveNotifications": "Receive push notifications",
+  "@receiveNotifications": {
+    "description": "Description for notification switch"
+  },
+  "sendTestNotification": "Send Test Notification",
+  "@sendTestNotification": {
+    "description": "Button to send a test notification"
+  },
+  "deviceToken": "Device Token",
+  "@deviceToken": {
+    "description": "Label for device token section"
+  },
+  "loading": "Loading...",
+  "@loading": {
+    "description": "Loading text"
+  },
+  "notAvailable": "Not available",
+  "@notAvailable": {
+    "description": "Text for when a feature is not available"
   }
 }''';
 
-  final file = File(filePath);
-  file.writeAsStringSync(content);
-  context.logger.info('Created file: $filePath');
-}
+  final enFile = File(enFilePath);
+  enFile.writeAsStringSync(enContent);
+  context.logger.info('Created file: $enFilePath');
 
-/// Generates the intl_es.arb file with Spanish translations
-void _generateIntlEsArbFile(HookContext context, String projectName) {
-  final filePath = '$projectName/lib/core/localization/intl_es.arb';
-  final content = '''{
+  // Spanish ARB file
+  final esFilePath = '$projectName/lib/core/localization/l10n/app_es.arb';
+  final esContent = '''{
   "@@locale": "es",
   "appTitle": "Mi Aplicación",
   "welcome": "Bienvenido",
@@ -262,510 +371,34 @@ void _generateIntlEsArbFile(HookContext context, String projectName) {
   "theme": "Tema",
   "darkMode": "Modo Oscuro",
   "lightMode": "Modo Claro",
-  "systemMode": "Modo del Sistema"
+  "systemMode": "Modo del Sistema",
+  "notifications": "Notificaciones",
+  "notificationSent": "Notificación enviada",
+  "enableNotifications": "Activar Notificaciones",
+  "receiveNotifications": "Recibir notificaciones push",
+  "sendTestNotification": "Enviar Notificación de Prueba",
+  "deviceToken": "Token del Dispositivo",
+  "loading": "Cargando...",
+  "notAvailable": "No disponible"
 }''';
 
-  final file = File(filePath);
-  file.writeAsStringSync(content);
-  context.logger.info('Created file: $filePath');
+  final esFile = File(esFilePath);
+  esFile.writeAsStringSync(esContent);
+  context.logger.info('Created file: $esFilePath');
 }
 
-/// Generates the generated/strings.dart file
-void _generateStringsDartFile(HookContext context, String projectName) {
-  final filePath = '$projectName/lib/core/localization/generated/strings.dart';
-  final content = '''
-
-import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:intl/intl.dart' as intl;
-
-import 'strings_en.dart';
-import 'strings_es.dart';
-
-// ignore_for_file: type=lint
-
-/// Callers can lookup localized strings with an instance of Strings
-/// returned by `Strings.of(context)`.
-///
-/// Applications need to include `Strings.delegate()` in their app's
-/// `localizationDelegates` list, and the locales they support in the app's
-/// `supportedLocales` list. For example:
-///
-/// ```dart
-/// import 'generated/strings.dart';
-///
-/// return MaterialApp(
-///   localizationsDelegates: Strings.localizationsDelegates,
-///   supportedLocales: Strings.supportedLocales,
-///   home: MyApplicationHome(),
-/// );
-/// ```
-///
-/// ## Update pubspec.yaml
-///
-/// Please make sure to update your pubspec.yaml to include the following
-/// packages:
-///
-/// ```yaml
-/// dependencies:
-///   # Internationalization support.
-///   flutter_localizations:
-///     sdk: flutter
-///   intl: any # Use the pinned version from flutter_localizations
-///
-///   # Rest of dependencies
-/// ```
-///
-/// ## iOS Applications
-///
-/// iOS applications define key application metadata, including supported
-/// locales, in an Info.plist file that is built into the application bundle.
-/// To configure the locales supported by your app, you'll need to edit this
-/// file.
-///
-/// First, open your project's ios/Runner.xcworkspace Xcode workspace file.
-/// Then, in the Project Navigator, open the Info.plist file under the Runner
-/// project's Runner folder.
-///
-/// Next, select the Information Property List item, select Add Item from the
-/// Editor menu, then select Localizations from the pop-up menu.
-///
-/// Select and expand the newly-created Localizations item then, for each
-/// locale your application supports, add a new item and select the locale
-/// you wish to add from the pop-up menu in the Value field. This list should
-/// be consistent with the languages listed in the Strings.supportedLocales
-/// property.
-abstract class Strings {
-  Strings(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
-
-  final String localeName;
-
-  static Strings? of(BuildContext context) {
-    return Localizations.of<Strings>(context, Strings);
-  }
-
-  static const LocalizationsDelegate<Strings> delegate = _StringsDelegate();
-
-  /// A list of this localizations delegate along with the default localizations
-  /// delegates.
-  ///
-  /// Returns a list of localizations delegates containing this delegate along with
-  /// GlobalMaterialLocalizations.delegate, GlobalCupertinoLocalizations.delegate,
-  /// and GlobalWidgetsLocalizations.delegate.
-  ///
-  /// Additional delegates can be added by appending to this list in
-  /// MaterialApp. This list does not have to be used at all if a custom list
-  /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
-
-  /// A list of this localizations delegate's supported locales.
-  static const List<Locale> supportedLocales = <Locale>[
-    Locale('en'),
-    Locale('es')
-  ];
-
-  /// The application title
-  ///
-  /// In en, this message translates to:
-  /// **'My App'**
-  String get appTitle;
-
-  /// Welcome message
-  ///
-  /// In en, this message translates to:
-  /// **'Welcome'**
-  String get welcome;
-
-  /// A welcome message with a name parameter
-  ///
-  /// In en, this message translates to:
-  /// **'Hello, {name}'**
-  String hello(String name);
-
-  /// A plural message for counter items
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =0{No items} =1{1 item} other{{count} items}}'**
-  String counter(int count);
-
-  /// Sign in button text
-  ///
-  /// In en, this message translates to:
-  /// **'Sign In'**
-  String get signIn;
-
-  /// Sign up button text
-  ///
-  /// In en, this message translates to:
-  /// **'Sign Up'**
-  String get signUp;
-
-  /// Email field label
-  ///
-  /// In en, this message translates to:
-  /// **'Email'**
-  String get email;
-
-  /// Password field label
-  ///
-  /// In en, this message translates to:
-  /// **'Password'**
-  String get password;
-
-  /// Forgot password button text
-  ///
-  /// In en, this message translates to:
-  /// **'Forgot Password?'**
-  String get forgotPassword;
-
-  /// Settings menu item
-  ///
-  /// In en, this message translates to:
-  /// **'Settings'**
-  String get settings;
-
-  /// Language setting
-  ///
-  /// In en, this message translates to:
-  /// **'Language'**
-  String get language;
-
-  /// Theme setting
-  ///
-  /// In en, this message translates to:
-  /// **'Theme'**
-  String get theme;
-
-  /// Dark mode setting
-  ///
-  /// In en, this message translates to:
-  /// **'Dark Mode'**
-  String get darkMode;
-
-  /// Light mode setting
-  ///
-  /// In en, this message translates to:
-  /// **'Light Mode'**
-  String get lightMode;
-
-  /// System theme mode setting
-  ///
-  /// In en, this message translates to:
-  /// **'System Mode'**
-  String get systemMode;
-}
-
-class _StringsDelegate extends LocalizationsDelegate<Strings> {
-  const _StringsDelegate();
-
-  @override
-  Future<Strings> load(Locale locale) {
-    return SynchronousFuture<Strings>(lookupStrings(locale));
-  }
-
-  @override
-  bool isSupported(Locale locale) => <String>['en', 'es'].contains(locale.languageCode);
-
-  @override
-  bool shouldReload(_StringsDelegate old) => false;
-}
-
-Strings lookupStrings(Locale locale) {
-  // Lookup logic when only language code is specified.
-  switch (locale.languageCode) {
-    case 'en': return StringsEn();
-    case 'es': return StringsEs();
-  }
-
-  throw FlutterError(
-    'Strings.delegate failed to load unsupported locale "${'locale'}". This is likely '
-    'an issue with the localizations generation tool. Please file an issue '
-    'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.'
-  );
-}
-''';
-
-  final file = File(filePath);
-  file.writeAsStringSync(content);
-  context.logger.info('Created file: $filePath');
-}
-
-/// Generates the generated/strings_en.dart file
-void _generateStringsEnDartFile(HookContext context, String projectName) {
-  final filePath =
-      '$projectName/lib/core/localization/generated/strings_en.dart';
-  final content = '''
-import 'package:intl/intl.dart' as intl;
-
-import 'strings.dart';
-
-// ignore_for_file: type=lint
-
-/// The translations for English (`en`).
-class StringsEn extends Strings {
-  StringsEn([String locale = 'en']) : super(locale);
-
-  @override
-  String get appTitle => 'My App';
-
-  @override
-  String get welcome => 'Welcome';
-
-  @override
-  String hello(String name) {
-    return 'Hello, \$name';
-  }
-
-  @override
-  String counter(int count) {
-    return intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      zero: 'No items',
-      one: '1 item',
-      other: '\$count items',
-    );
-  }
-
-  @override
-  String get signIn => 'Sign In';
-
-  @override
-  String get signUp => 'Sign Up';
-
-  @override
-  String get email => 'Email';
-
-  @override
-  String get password => 'Password';
-
-  @override
-  String get forgotPassword => 'Forgot Password?';
-
-  @override
-  String get settings => 'Settings';
-
-  @override
-  String get language => 'Language';
-
-  @override
-  String get theme => 'Theme';
-
-  @override
-  String get darkMode => 'Dark Mode';
-
-  @override
-  String get lightMode => 'Light Mode';
-
-  @override
-  String get systemMode => 'System Mode';
-}
-''';
-
-  final file = File(filePath);
-  file.writeAsStringSync(content);
-  context.logger.info('Created file: $filePath');
-}
-
-/// Generates the generated/strings_es.dart file
-void _generateStringsEsDartFile(HookContext context, String projectName) {
-  final filePath =
-      '$projectName/lib/core/localization/generated/strings_es.dart';
-  final content = '''
-import 'package:intl/intl.dart' as intl;
-
-import 'strings.dart';
-
-// ignore_for_file: type=lint
-
-/// The translations for Spanish Castilian (`es`).
-class StringsEs extends Strings {
-  StringsEs([String locale = 'es']) : super(locale);
-
-  @override
-  String get appTitle => 'Mi Aplicación';
-
-  @override
-  String get welcome => 'Bienvenido';
-
-  @override
-  String hello(String name) {
-    return 'Hola, \$name';
-  }
-
-  @override
-  String counter(int count) {
-    return intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      zero: 'Sin elementos',
-      one: '1 elemento',
-      other: '\$count elementos',
-    );
-  }
-
-  @override
-  String get signIn => 'Iniciar Sesión';
-
-  @override
-  String get signUp => 'Registrarse';
-
-  @override
-  String get email => 'Correo electrónico';
-
-  @override
-  String get password => 'Contraseña';
-
-  @override
-  String get forgotPassword => '¿Olvidaste tu contraseña?';
-
-  @override
-  String get settings => 'Configuración';
-
-  @override
-  String get language => 'Idioma';
-
-  @override
-  String get theme => 'Tema';
-
-  @override
-  String get darkMode => 'Modo Oscuro';
-
-  @override
-  String get lightMode => 'Modo Claro';
-
-  @override
-  String get systemMode => 'Modo del Sistema';
-}
-''';
-
-  final file = File(filePath);
-  file.writeAsStringSync(content);
-  context.logger.info('Created file: $filePath');
-}
-
-/// Update pubspec.yaml to add localization dependencies
-void _updatePubspecForLocalization(HookContext context, String projectName) {
-  final pubspecFile = File('$projectName/pubspec.yaml');
-  if (!pubspecFile.existsSync()) {
-    context.logger.warn(
-        'pubspec.yaml not found, skipping adding localization dependencies');
-    return;
-  }
-
-  String content = pubspecFile.readAsStringSync();
-
-  // Make sure flutter_localizations is included
-  if (!content.contains('flutter_localizations:')) {
-    // Find the position to insert the dependencies
-    final sdkDepIndex = content.indexOf('sdk: flutter');
-    if (sdkDepIndex != -1) {
-      final insertPoint = content.indexOf('\n', sdkDepIndex) + 1;
-
-      final localizationDeps = '''
-  flutter_localizations:
-    sdk: flutter
-''';
-
-      content = content.substring(0, insertPoint + 1) +
-          localizationDeps +
-          content.substring(insertPoint + 1);
-    }
-  }
-
-  // Check if the generate: true is in the flutter section
-  final flutterSection = content.indexOf('flutter:');
-  if (flutterSection != -1) {
-    final flutterEndIndex = content.indexOf('\n', flutterSection);
-    if (flutterEndIndex != -1) {
-      final flutterSectionStart = content.substring(0, flutterEndIndex + 1);
-      final flutterSectionEnd = content.substring(flutterEndIndex + 1);
-
-      if (!content.contains('generate: true')) {
-        content =
-            flutterSectionStart + '  generate: true\n' + flutterSectionEnd;
-      }
-    }
-  }
-
-  // Write updated content back to file
-  pubspecFile.writeAsStringSync(content);
-  context.logger.success('Updated pubspec.yaml with localization dependencies');
-}
-
-/// Update main.dart to initialize localization
-void _updateMainForLocalization(HookContext context, String projectName) {
-  final mainDartFile = File('$projectName/lib/main.dart');
-  if (!mainDartFile.existsSync()) {
-    context.logger
-        .warn('main.dart not found, skipping localization initialization');
-    return;
-  }
-
-  String content = mainDartFile.readAsStringSync();
-
-  // Add import if not already present
-  if (!content.contains('localization.dart')) {
-    final importPattern = RegExp(r'import .*;\n');
-    final lastImportMatch = importPattern.allMatches(content).lastOrNull;
-
-    if (lastImportMatch != null) {
-      final insertPosition = lastImportMatch.end;
-      content = content.substring(0, insertPosition) +
-          "import 'package:$projectName/core/localization/localization.dart';\n" +
-          content.substring(insertPosition);
-    }
-  }
-
-  // Update MaterialApp or similar widget to add localization delegates
-  final materialAppPattern = RegExp(r'MaterialApp\(');
-  final getMatAppPattern = RegExp(r'GetMaterialApp\(');
-
-  if (materialAppPattern.hasMatch(content)) {
-    // Find a good spot to insert localization properties
-    if (!content.contains('localizationsDelegates:') &&
-        !content.contains('supportedLocales:')) {
-      content = content.replaceAll(
-        'MaterialApp(',
-        'MaterialApp(\n      localizationsDelegates: Localization.localizationDelegates,\n      supportedLocales: Localization.supportedLocales,\n      // Set initial locale if needed\n      // locale: const Locale(\'en\'),',
-      );
-    }
-  } else if (getMatAppPattern.hasMatch(content)) {
-    // Support for GetX
-    if (!content.contains('localizationsDelegates:') &&
-        !content.contains('supportedLocales:')) {
-      content = content.replaceAll(
-        'GetMaterialApp(',
-        'GetMaterialApp(\n      localizationsDelegates: Localization.localizationDelegates,\n      supportedLocales: Localization.supportedLocales,\n      // Set initial locale if needed\n      // locale: const Locale(\'en\'),',
-      );
-    }
-  }
-
-  // Write updated content back to file
-  mainDartFile.writeAsStringSync(content);
-  context.logger.success('Updated main.dart with localization configuration');
-}
-
-/// Generate a language selector widget as an example
+/// Generate a language selector widget for easier language switching
 void _generateLanguageSelectorWidget(HookContext context, String projectName) {
+  final filePath =
+      '$projectName/lib/core/localization/widgets/language_selector.dart';
   final directory = Directory('$projectName/lib/core/localization/widgets');
   if (!directory.existsSync()) {
     directory.createSync(recursive: true);
   }
 
-  final filePath =
-      '$projectName/lib/core/localization/widgets/language_selector.dart';
   final content = '''
 import 'package:flutter/material.dart';
-
-import '../l10n.dart';
+import '../l10n/l10n.dart';
 import '../localization.dart';
 
 /// A widget to select language in settings
@@ -785,12 +418,12 @@ class LanguageSelector extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Text(
-            context.strings.language,
+            context.l10n.language,
             style: Theme.of(context).textTheme.titleMedium,
           ),
         ),
         const SizedBox(height: 8),
-        ...L10n.all.map((locale) {
+        ...L10n.supportedLocales.map((locale) {
           final isSelected = currentLocale.languageCode == locale.languageCode;
           
           return ListTile(
@@ -830,13 +463,15 @@ class LanguageToggle extends StatelessWidget {
         Localization.getLanguageFlag(currentLocale.languageCode),
         style: const TextStyle(fontSize: 24),
       ),
-      tooltip: context.strings.language,
+      tooltip: context.l10n.language,
       onPressed: () {
-        // Simple toggle between English and Spanish
-        final newLocale = currentLocale.languageCode == 'en' 
-            ? const Locale('es') 
-            : const Locale('en');
-        onChanged(newLocale);
+        // Toggle between English and Spanish (or other available locales)
+        final supportedLocales = L10n.supportedLocales;
+        final currentIndex = supportedLocales.indexWhere(
+          (locale) => locale.languageCode == currentLocale.languageCode
+        );
+        final nextIndex = (currentIndex + 1) % supportedLocales.length;
+        onChanged(supportedLocales[nextIndex]);
       },
     );
   }
@@ -845,328 +480,104 @@ class LanguageToggle extends StatelessWidget {
 
   final file = File(filePath);
   file.writeAsStringSync(content);
-  context.logger.info('Created language selector widget: $filePath');
+  context.logger.info('Created file: $filePath');
 }
 
-/// Generate a LocalizationProvider for state management if using Provider
-void _generateLocalizationProvider(
-    HookContext context, String projectName, String stateManagement) {
-  if (stateManagement != 'Provider') {
-    return;
+/// Generate BLoC implementation for localization
+void _generateBlocImplementation(HookContext context, String projectName) {
+  // Create directories
+  final blocDir = Directory('$projectName/lib/core/localization/bloc');
+  if (!blocDir.existsSync()) {
+    blocDir.createSync(recursive: true);
   }
 
-  final filePath =
-      '$projectName/lib/core/localization/providers/localization_provider.dart';
-
-  // Create directory if it doesn't exist
-  final directory = Directory('$projectName/lib/core/localization/providers');
-  if (!directory.existsSync()) {
-    directory.createSync(recursive: true);
-  }
-
-  final content = '''
-import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-/// Provider to manage application locale
-class LocalizationProvider extends ChangeNotifier {
-  static const String _localeKey = 'locale';
-  Locale _locale = const Locale('en');
-  bool _isInitialized = false;
-  
-  /// Current locale
-  Locale get locale => _locale;
-  
-  /// Is provider initialized
-  bool get isInitialized => _isInitialized;
-  
-  /// Initialize provider and load saved locale
-  Future<void> initialize() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedLocale = prefs.getString(_localeKey);
-    
-    if (savedLocale != null) {
-      _locale = Locale(savedLocale);
-    }
-    
-    _isInitialized = true;
-    notifyListeners();
-  }
-  
-  /// Set new locale and save to preferences
-  Future<void> setLocale(Locale locale) async {
-    if (_locale == locale) return;
-    
-    _locale = locale;
-    
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_localeKey, locale.languageCode);
-    
-    notifyListeners();
-  }
-}
-''';
-
-  final file = File(filePath);
-  file.writeAsStringSync(content);
-  context.logger.info('Created localization provider: $filePath');
-}
-
-/// Generate localization controller for GetX if using GetX
-void _generateLocalizationController(
-    HookContext context, String projectName, String stateManagement) {
-  if (stateManagement != 'GetX') {
-    return;
-  }
-
-  final filePath =
-      '$projectName/lib/core/localization/controllers/localization_controller.dart';
-
-  // Create directory if it doesn't exist
-  final directory = Directory('$projectName/lib/core/localization/controllers');
-  if (!directory.existsSync()) {
-    directory.createSync(recursive: true);
-  }
-
-  final content = '''
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-import '../l10n.dart';
-
-/// GetX controller for managing application locale
-class LocalizationController extends GetxController {
-  static const String _localeKey = 'locale';
-  
-  // Observable locale
-  final Rx<Locale> _locale = Rx<Locale>(const Locale('en'));
-  
-  /// Get current locale
-  Locale get locale => _locale.value;
-  
-  /// Set new locale
-  set locale(Locale value) => _locale.value = value;
-  
-  @override
-  void onInit() {
-    super.onInit();
-    loadSavedLocale();
-  }
-  
-  /// Load saved locale from preferences
-  Future<void> loadSavedLocale() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedLocale = prefs.getString(_localeKey);
-    
-    if (savedLocale != null) {
-      _locale.value = Locale(savedLocale);
-      
-      // Update GetX locale
-      Get.updateLocale(_locale.value);
-      final prefs = await SharedPreferences.getInstance();
-    final savedLocale = prefs.getString(_localeKey);
-    
-    if (savedLocale != null) {
-      _locale.value = Locale(savedLocale);
-      
-      // Update GetX locale
-      Get.updateLocale(_locale.value);
-    }
-  }
-  
-  /// Set new locale and save to preferences
-  Future<void> setLocale(Locale locale) async {
-    if (_locale.value == locale) return;
-    
-    _locale.value = locale;
-    
-    // Update GetX locale
-    Get.updateLocale(locale);
-    
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_localeKey, locale.languageCode);
-  }
-  
-  /// Toggle between available locales
-  void toggleLocale() {
-    final currentLanguageCode = _locale.value.languageCode;
-    final availableLocales = L10n.all;
-    
-    // Find current index
-    final currentIndex = availableLocales.indexWhere(
-      (locale) => locale.languageCode == currentLanguageCode
-    );
-    
-    // Get next locale (or first if at the end)
-    final nextIndex = (currentIndex + 1) % availableLocales.length;
-    final nextLocale = availableLocales[nextIndex];
-    
-    setLocale(nextLocale);
-  }
-}
-''';
-
-  final file = File(filePath);
-  file.writeAsStringSync(content);
-  context.logger.info('Created localization controller: $filePath');
-}
-
-/// Generate localization BLoC if using BLoC
-void _generateLocalizationBloc(
-    HookContext context, String projectName, String stateManagement) {
-  if (stateManagement != 'Bloc' && stateManagement != 'BLoC') {
-    return;
-  }
-
-  // Create directories if they don't exist
-  final directories = [
-    '$projectName/lib/core/localization/bloc',
-    '$projectName/lib/core/localization/bloc/state',
-    '$projectName/lib/core/localization/bloc/event',
-  ];
-
-  for (final dir in directories) {
-    final directory = Directory(dir);
-    if (!directory.existsSync()) {
-      directory.createSync(recursive: true);
-    }
-  }
-
-  // Generate localization state file
-  final stateFilePath =
-      '$projectName/lib/core/localization/bloc/state/localization_state.dart';
-  final stateContent = '''
-import 'package:equatable/equatable.dart';
-import 'package:flutter/material.dart';
-
-/// Base state for localization
-abstract class LocalizationState extends Equatable {
-  const LocalizationState();
-  
-  @override
-  List<Object> get props => [];
-}
-
-/// Initial loading state
-class LocalizationInitial extends LocalizationState {
-  const LocalizationInitial();
-}
-
-/// State representing current localization
-class LocalizationLoaded extends LocalizationState {
-  final Locale locale;
-  
-  const LocalizationLoaded(this.locale);
-  
-  @override
-  List<Object> get props => [locale.languageCode];
-}
-
-/// Error state
-class LocalizationError extends LocalizationState {
-  final String message;
-  
-  const LocalizationError(this.message);
-  
-  @override
-  List<Object> get props => [message];
-}
-''';
-
-  final stateFile = File(stateFilePath);
-  stateFile.writeAsStringSync(stateContent);
-  context.logger.info('Created file: $stateFilePath');
-
-  // Generate localization event file
-  final eventFilePath =
-      '$projectName/lib/core/localization/bloc/event/localization_event.dart';
-  final eventContent = '''
-import 'package:equatable/equatable.dart';
-import 'package:flutter/material.dart';
-
-/// Base event for localization
-abstract class LocalizationEvent extends Equatable {
-  const LocalizationEvent();
-  
-  @override
-  List<Object> get props => [];
-}
-
-/// Event to initialize localization
-class LocalizationStarted extends LocalizationEvent {
-  const LocalizationStarted();
-}
-
-/// Event to change locale
-class LocalizationChanged extends LocalizationEvent {
-  final Locale locale;
-  
-  const LocalizationChanged(this.locale);
-  
-  @override
-  List<Object> get props => [locale.languageCode];
-}
-''';
-
-  final eventFile = File(eventFilePath);
-  eventFile.writeAsStringSync(eventContent);
-  context.logger.info('Created file: $eventFilePath');
-
-  // Generate bloc file
+  // Generate the locale bloc file
   final blocFilePath =
-      '$projectName/lib/core/localization/bloc/localization_bloc.dart';
+      '$projectName/lib/core/localization/bloc/locale_bloc.dart';
   final blocContent = '''
-import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:equatable/equatable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n/l10n.dart';
 
-import 'event/localization_event.dart';
-import 'state/localization_state.dart';
-
-/// BLoC for managing application localization
-class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
-  static const String _localeKey = 'locale';
+// Events
+abstract class LocaleEvent extends Equatable {
+  const LocaleEvent();
   
-  LocalizationBloc() : super(const LocalizationInitial()) {
-    on<LocalizationStarted>(_onStarted);
-    on<LocalizationChanged>(_onChanged);
+  @override
+  List<Object> get props => [];
+}
+
+class ChangeLocaleEvent extends LocaleEvent {
+  final String languageCode;
+  
+  const ChangeLocaleEvent(this.languageCode);
+  
+  @override
+  List<Object> get props => [languageCode];
+}
+
+class LoadLocaleEvent extends LocaleEvent {}
+
+// State
+class LocaleState extends Equatable {
+  final Locale locale;
+  
+  const LocaleState(this.locale);
+  
+  @override
+  List<Object> get props => [locale];
+}
+
+// BLoC
+class LocaleBloc extends Bloc<LocaleEvent, LocaleState> {
+  static const String LOCALE_KEY = 'app_locale';
+  
+  LocaleBloc() : super(const LocaleState(Locale('en'))) {
+    on<ChangeLocaleEvent>(_onChangeLocale);
+    on<LoadLocaleEvent>(_onLoadLocale);
+    
+    // Load saved locale when bloc is created
+    add(LoadLocaleEvent());
   }
   
-  /// Handle initialization
-  Future<void> _onStarted(
-    LocalizationStarted event,
-    Emitter<LocalizationState> emit,
+  Future<void> _onChangeLocale(
+    ChangeLocaleEvent event, 
+    Emitter<LocaleState> emit
+  ) async {
+    final locale = Locale(event.languageCode);
+    emit(LocaleState(locale));
+    
+    // Save the locale preference
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(LOCALE_KEY, event.languageCode);
+  }
+  
+  Future<void> _onLoadLocale(
+    LoadLocaleEvent event, 
+    Emitter<LocaleState> emit
   ) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final savedLocale = prefs.getString(_localeKey);
+      final String? languageCode = prefs.getString(LOCALE_KEY);
       
-      if (savedLocale != null) {
-        emit(LocalizationLoaded(Locale(savedLocale)));
-      } else {
-        emit(const LocalizationLoaded(Locale('en')));
+      if (languageCode != null) {
+        emit(LocaleState(Locale(languageCode)));
       }
     } catch (e) {
-      emit(LocalizationError(e.toString()));
-      emit(const LocalizationLoaded(Locale('en')));
+      // If there's an error, keep using the default locale
     }
+  }
+}
+
+// Extension for easy use with BuildContext
+extension LocaleBlocExtension on BuildContext {
+  void changeLocale(String languageCode) {
+    read<LocaleBloc>().add(ChangeLocaleEvent(languageCode));
   }
   
-  /// Handle locale change
-  Future<void> _onChanged(
-    LocalizationChanged event,
-    Emitter<LocalizationState> emit,
-  ) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_localeKey, event.locale.languageCode);
-      
-      emit(LocalizationLoaded(event.locale));
-    } catch (e) {
-      emit(LocalizationError(e.toString()));
-    }
-  }
+  Locale get locale => read<LocaleBloc>().state.locale;
 }
 ''';
 
@@ -1175,240 +586,902 @@ class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
   context.logger.info('Created file: $blocFilePath');
 }
 
-/// Generate localization repository for Clean Architecture
-void _generateLocalizationRepository(
-    HookContext context, String projectName, String architecture) {
-  if (architecture != 'Clean Architecture') {
+/// Generate Provider implementation for localization
+void _generateProviderImplementation(HookContext context, String projectName) {
+  // Create directories
+  final providerDir = Directory('$projectName/lib/core/localization/providers');
+  if (!providerDir.existsSync()) {
+    providerDir.createSync(recursive: true);
+  }
+
+  // Generate the localization provider file
+  final providerFilePath =
+      '$projectName/lib/core/localization/providers/localization_provider.dart';
+  final providerContent = '''
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n/l10n.dart';
+
+class LocalizationProvider extends ChangeNotifier {
+  static const String LOCALE_KEY = 'app_locale';
+  
+  Locale _locale = const Locale('en');
+  
+  LocalizationProvider() {
+    _loadSavedLocale();
+  }
+  
+  Locale get locale => _locale;
+  
+  Future<void> _loadSavedLocale() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? languageCode = prefs.getString(LOCALE_KEY);
+      
+      if (languageCode != null) {
+        _locale = Locale(languageCode);
+        notifyListeners();
+      }
+    } catch (e) {
+      // If there's an error, keep using the default locale
+    }
+  }
+  
+  Future<void> setLocale(Locale locale) async {
+    if (_locale == locale) return;
+    
+    _locale = locale;
+    notifyListeners();
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(LOCALE_KEY, locale.languageCode);
+    } catch (e) {
+      // If there's an error saving, we still have the locale in memory
+    }
+  }
+  
+  Future<void> setLocaleByLanguageCode(String languageCode) async {
+    await setLocale(Locale(languageCode));
+  }
+}
+
+// Extension for easy use with BuildContext
+extension LocalizationProviderExtension on BuildContext {
+  void changeLocale(String languageCode) {
+    Provider.of<LocalizationProvider>(this, listen: false)
+        .setLocaleByLanguageCode(languageCode);
+  }
+  
+  Locale get locale => 
+      Provider.of<LocalizationProvider>(this, listen: false).locale;
+}
+''';
+
+  final providerFile = File(providerFilePath);
+  providerFile.writeAsStringSync(providerContent);
+  context.logger.info('Created file: $providerFilePath');
+}
+
+/// Generate Riverpod implementation for localization
+void _generateRiverpodImplementation(HookContext context, String projectName) {
+  // Create directories
+  final riverpodDir = Directory('$projectName/lib/core/localization/providers');
+  if (!riverpodDir.existsSync()) {
+    riverpodDir.createSync(recursive: true);
+  }
+
+  // Generate the locale provider file
+  final providerFilePath =
+      '$projectName/lib/core/localization/providers/locale_provider.dart';
+  final providerContent = '''
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n/l10n.dart';
+
+class LocaleNotifier extends StateNotifier<Locale> {
+  static const String LOCALE_KEY = 'app_locale';
+  
+  LocaleNotifier() : super(const Locale('en')) {
+    _loadSavedLocale();
+  }
+  
+  Future<void> _loadSavedLocale() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? languageCode = prefs.getString(LOCALE_KEY);
+      
+      if (languageCode != null) {
+        state = Locale(languageCode);
+      }
+    } catch (e) {
+      // If there's an error, keep using the default locale
+    }
+  }
+  
+  Future<void> setLocale(String languageCode) async {
+    if (state.languageCode == languageCode) return;
+    
+    state = Locale(languageCode);
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(LOCALE_KEY, languageCode);
+    } catch (e) {
+      // If there's an error saving, we still have the locale in memory
+    }
+  }
+}
+
+final localeProvider = StateNotifierProvider<LocaleNotifier, Locale>((ref) {
+  return LocaleNotifier();
+});
+
+// Extensions for use with WidgetRef in Consumer widgets
+extension LocaleRiverpodExtension on WidgetRef {
+  void changeLocale(String languageCode) {
+    read(localeProvider.notifier).setLocale(languageCode);
+  }
+  
+  Locale get locale => read(localeProvider);
+}
+''';
+
+  final providerFile = File(providerFilePath);
+  providerFile.writeAsStringSync(providerContent);
+  context.logger.info('Created file: $providerFilePath');
+}
+
+/// Generate GetX implementation for localization
+void _generateGetXImplementation(HookContext context, String projectName) {
+  // Create directories
+  final getxDir = Directory('$projectName/lib/core/localization/controllers');
+  if (!getxDir.existsSync()) {
+    getxDir.createSync(recursive: true);
+  }
+
+  // Generate the localization controller file
+  final controllerFilePath =
+      '$projectName/lib/core/localization/controllers/localization_controller.dart';
+  final controllerContent = '''
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n/l10n.dart';
+
+class LocalizationController extends GetxController {
+  static const String LOCALE_KEY = 'app_locale';
+  
+  // Observable locale
+  final _locale = Rx<Locale>(const Locale('en'));
+  
+  // Getter for the locale
+  Locale get locale => _locale.value;
+  
+  @override
+  void onInit() {
+    super.onInit();
+    _loadSavedLocale();
+  }
+  
+  Future<void> _loadSavedLocale() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? languageCode = prefs.getString(LOCALE_KEY);
+      
+      if (languageCode != null) {
+        _locale.value = Locale(languageCode);
+        Get.updateLocale(_locale.value);
+      }
+    } catch (e) {
+      // If there's an error, keep using the default locale
+    }
+  }
+  
+  Future<void> setLocale(String languageCode) async {
+    _locale.value = Locale(languageCode);
+    Get.updateLocale(_locale.value);
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(LOCALE_KEY, languageCode);
+    } catch (e) {
+      // If there's an error saving, we still have the locale in memory
+    }
+  }
+  
+  void toggleLocale() {
+    final supportedLocales = L10n.supportedLocales;
+    final currentIndex = supportedLocales.indexWhere(
+      (locale) => locale.languageCode == _locale.value.languageCode
+    );
+    final nextIndex = (currentIndex + 1) % supportedLocales.length;
+    setLocale(supportedLocales[nextIndex].languageCode);
+  }
+}
+
+// Extension for easy use with GetX
+extension LocalizationGetXExtension on GetInterface {
+  void changeLocale(String languageCode) {
+    Get.find<LocalizationController>().setLocale(languageCode);
+  }
+  
+  Locale get currentLocale => Get.find<LocalizationController>().locale;
+}
+''';
+
+  final controllerFile = File(controllerFilePath);
+  controllerFile.writeAsStringSync(controllerContent);
+  context.logger.info('Created file: $controllerFilePath');
+}
+
+/// Generate MobX implementation for localization
+void _generateMobXImplementation(HookContext context, String projectName) {
+  // Create directories
+  final mobxDir = Directory('$projectName/lib/core/localization/stores');
+  if (!mobxDir.existsSync()) {
+    mobxDir.createSync(recursive: true);
+  }
+
+  // Generate the localization store file
+  final storeFilePath =
+      '$projectName/lib/core/localization/stores/localization_store.dart';
+  final storeContent = '''
+import 'package:flutter/material.dart';
+import 'package:mobx/mobx.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n/l10n.dart';
+
+// Include generated file
+part 'localization_store.g.dart';
+
+// This is the class used by rest of the codebase
+class LocalizationStore = _LocalizationStore with _\$LocalizationStore;
+
+// The store class
+abstract class _LocalizationStore with Store {
+  static const String LOCALE_KEY = 'app_locale';
+
+  _LocalizationStore() {
+    _loadSavedLocale();
+  }
+  
+  @observable
+  Locale locale = const Locale('en');
+  
+  @action
+  Future<void> _loadSavedLocale() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? languageCode = prefs.getString(LOCALE_KEY);
+      
+      if (languageCode != null) {
+        locale = Locale(languageCode);
+      }
+    } catch (e) {
+      // If there's an error, keep using the default locale
+    }
+  }
+  
+  @action
+  Future<void> setLocale(String languageCode) async {
+    locale = Locale(languageCode);
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(LOCALE_KEY, languageCode);
+    } catch (e) {
+      // If there's an error saving, we still have the locale in memory
+    }
+  }
+  
+  @computed
+  String get languageCode => locale.languageCode;
+}
+
+// Create a singleton instance
+final localizationStore = LocalizationStore();
+''';
+
+  final storeFile = File(storeFilePath);
+  storeFile.writeAsStringSync(storeContent);
+  context.logger.info('Created file: $storeFilePath');
+
+  // Add a note about generating MobX code
+  context.logger.info(
+      'Note: You need to run "flutter pub run build_runner build" to generate the MobX code');
+}
+
+/// Generate Redux implementation for localization
+void _generateReduxImplementation(HookContext context, String projectName) {
+  // Create directories
+  final reduxDir = Directory('$projectName/lib/core/localization/redux');
+  if (!reduxDir.existsSync()) {
+    reduxDir.createSync(recursive: true);
+  }
+
+  // Generate the localization redux file
+  final reduxFilePath =
+      '$projectName/lib/core/localization/redux/locale_redux.dart';
+  final reduxContent = '''
+import 'package:flutter/material.dart';
+import 'package:redux/redux.dart';
+import 'package:redux_thunk/redux_thunk.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+// Actions
+class SetLocaleAction {
+  final Locale locale;
+  
+  SetLocaleAction(this.locale);
+}
+
+// Thunk Actions
+ThunkAction<AppState> loadSavedLocale() {
+  return (Store<AppState> store) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? languageCode = prefs.getString('app_locale');
+      if (languageCode != null) {
+        store.dispatch(SetLocaleAction(Locale(languageCode)));
+      }
+    } catch (e) {
+      // If there's an error, keep using the default locale
+    }
+  };
+}
+
+ThunkAction<AppState> setLocale(String languageCode) {
+  return (Store<AppState> store) async {
+    store.dispatch(SetLocaleAction(Locale(languageCode)));
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('app_locale', languageCode);
+    } catch (e) {
+      // If there's an error saving, we still have the locale in memory
+    }
+  };
+}
+
+// Reducer
+Locale localeReducer(Locale state, dynamic action) {
+  if (action is SetLocaleAction) {
+    return action.locale;
+  }
+  
+  return state;
+}
+
+// State
+class LocaleState {
+  final Locale locale;
+  
+  LocaleState({required this.locale});
+  
+  factory LocaleState.initial() {
+    return LocaleState(locale: const Locale('en'));
+  }
+  
+  LocaleState copyWith({Locale? locale}) {
+    return LocaleState(
+      locale: locale ?? this.locale,
+    );
+  }
+}
+
+// Extensions for use with StoreProvider
+extension LocaleReduxExtension {
+  static void changeLocale(BuildContext context, String languageCode) {
+    StoreProvider.of<AppState>(context).dispatch(setLocale(languageCode));
+  }
+  
+  static Locale getCurrentLocale(BuildContext context) {
+    return StoreProvider.of<AppState>(context).state.localeState.locale;
+  }
+}
+''';
+
+  final reduxFile = File(reduxFilePath);
+  reduxFile.writeAsStringSync(reduxContent);
+  context.logger.info('Created file: $reduxFilePath');
+}
+
+/// Generate default implementation for localization when no state management is specified
+void _generateDefaultImplementation(HookContext context, String projectName) {
+  final filePath = '$projectName/lib/core/localization/locale_manager.dart';
+  final content = '''
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'l10n/l10n.dart';
+
+/// Simple class to manage localization without complex state management
+class LocaleManager {
+  static const String LOCALE_KEY = 'app_locale';
+  
+  Locale _locale = const Locale('en');
+  final List<Function(Locale)> _listeners = [];
+  
+  static final LocaleManager _instance = LocaleManager._internal();
+  
+  factory LocaleManager() {
+    return _instance;
+  }
+  
+  LocaleManager._internal() {
+    _loadSavedLocale();
+  }
+  
+  /// Get the current locale
+  Locale get locale => _locale;
+  
+  /// Add a listener for when the locale changes
+  void addListener(Function(Locale) listener) {
+    _listeners.add(listener);
+  }
+  
+  /// Remove a listener
+  void removeListener(Function(Locale) listener) {
+    _listeners.remove(listener);
+  }
+  
+  /// Load the saved locale from SharedPreferences
+  Future<void> _loadSavedLocale() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? languageCode = prefs.getString(LOCALE_KEY);
+      
+      if (languageCode != null) {
+        _setLocaleInternal(Locale(languageCode));
+      }
+    } catch (e) {
+      // If there's an error, keep using the default locale
+    }
+  }
+  
+  /// Set the locale and notify listeners
+  void _setLocaleInternal(Locale locale) {
+    _locale = locale;
+    
+    // Notify all listeners
+    for (final listener in _listeners) {
+      listener(_locale);
+    }
+  }
+  
+  /// Change the locale and save to SharedPreferences
+  Future<void> setLocale(Locale locale) async {
+    if (_locale == locale) return;
+    
+    _setLocaleInternal(locale);
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(LOCALE_KEY, locale.languageCode);
+    } catch (e) {
+      // If there's an error saving, we still have the locale in memory
+    }
+  }
+  
+  /// Set locale using language code
+  Future<void> setLocaleByLanguageCode(String languageCode) async {
+    await setLocale(Locale(languageCode));
+  }
+  
+  /// Toggle to the next locale in the list of supported locales
+  Future<void> toggleLocale() async {
+    final supportedLocales = L10n.supportedLocales;
+    final currentIndex = supportedLocales.indexWhere(
+      (supportedLocale) => supportedLocale.languageCode == _locale.languageCode
+    );
+    final nextIndex = (currentIndex + 1) % supportedLocales.length;
+    await setLocale(supportedLocales[nextIndex]);
+  }
+}
+
+// Global instance
+final localeManager = LocaleManager();
+''';
+
+  final file = File(filePath);
+  file.writeAsStringSync(content);
+  context.logger.info('Created file: $filePath');
+}
+
+/// Update pubspec.yaml to add localization dependencies
+void _updatePubspecForLocalization(HookContext context, String projectName) {
+  final pubspecFile = File('$projectName/pubspec.yaml');
+  if (!pubspecFile.existsSync()) {
+    context.logger.warn(
+        'pubspec.yaml not found, skipping adding localization dependencies');
     return;
   }
 
-  // Create directories
-  final directories = [
-    '$projectName/lib/core/localization/domain/repositories',
-    '$projectName/lib/core/localization/domain/usecases',
-    '$projectName/lib/core/localization/data/repositories',
-    '$projectName/lib/core/localization/data/datasources',
-  ];
+  String content = pubspecFile.readAsStringSync();
+  bool modified = false;
 
-  for (final dir in directories) {
-    final directory = Directory(dir);
-    if (!directory.existsSync()) {
-      directory.createSync(recursive: true);
+  // Add flutter_localizations dependency if not already present
+  if (!content.contains('flutter_localizations:')) {
+    final flutterDepIndex = content.indexOf('flutter:');
+    if (flutterDepIndex != -1) {
+      final insertPosition = content.indexOf('sdk: flutter');
+      if (insertPosition != -1) {
+        final endOfLine = content.indexOf('\n', insertPosition);
+        if (endOfLine != -1) {
+          final newContent = content.substring(0, endOfLine + 1) +
+              '  flutter_localizations:\n    sdk: flutter\n' +
+              content.substring(endOfLine + 1);
+          content = newContent;
+          modified = true;
+        }
+      }
     }
   }
 
-  // Generate repository interface
-  final repoPath =
-      '$projectName/lib/core/localization/domain/repositories/localization_repository.dart';
-  final repoContent = '''
-import 'package:dartz/dartz.dart';
-import 'package:flutter/material.dart';
-
-import '../../../../error/failures/failure.dart';
-
-/// Repository interface for localization
-abstract class LocalizationRepository {
-  /// Get the current locale
-  Future<Either<Failure, Locale>> getCurrentLocale();
-  
-  /// Set a new locale
-  Future<Either<Failure, void>> setLocale(Locale locale);
-  
-  /// Get the list of supported locales
-  Future<Either<Failure, List<Locale>>> getSupportedLocales();
-}
-''';
-
-  final repoFile = File(repoPath);
-  repoFile.writeAsStringSync(repoContent);
-  context.logger.info('Created file: $repoPath');
-
-  // Generate data source interface
-  final dsPath =
-      '$projectName/lib/core/localization/data/datasources/localization_data_source.dart';
-  final dsContent = '''
-import 'package:flutter/material.dart';
-
-/// Data source interface for localization
-abstract class LocalizationDataSource {
-  /// Get the current locale
-  Future<Locale> getCurrentLocale();
-  
-  /// Set a new locale
-  Future<void> setLocale(Locale locale);
-  
-  /// Get the list of supported locales
-  Future<List<Locale>> getSupportedLocales();
-}
-
-/// Implementation of LocalizationDataSource using shared preferences
-class LocalizationLocalDataSource implements LocalizationDataSource {
-  static const String _localeKey = 'locale';
-  final SharedPreferences _prefs;
-  
-  LocalizationLocalDataSource(this._prefs);
-  
-  @override
-  Future<Locale> getCurrentLocale() async {
-    final savedLocale = _prefs.getString(_localeKey);
-    return Locale(savedLocale ?? 'en');
-  }
-  
-  @override
-  Future<void> setLocale(Locale locale) async {
-    await _prefs.setString(_localeKey, locale.languageCode);
-  }
-  
-  @override
-  Future<List<Locale>> getSupportedLocales() async {
-    return const [
-      Locale('en'),
-      Locale('es'),
-    ];
-  }
-}
-''';
-
-  final dsFile = File(dsPath);
-  dsFile.writeAsStringSync(dsContent);
-  context.logger.info('Created file: $dsPath');
-
-  // Add import at the top of the file
-  final importLine =
-      "import 'package:shared_preferences/shared_preferences.dart';\n\n";
-  final dsFileContent = dsFile.readAsStringSync();
-  dsFile.writeAsStringSync(importLine + dsFileContent);
-
-  // Generate repository implementation
-  final repoImplPath =
-      '$projectName/lib/core/localization/data/repositories/localization_repository_impl.dart';
-  final repoImplContent = '''
-import 'package:dartz/dartz.dart';
-import 'package:flutter/material.dart';
-
-import '../../../../error/exceptions/error_exception.dart';
-import '../../../../error/failures/failure.dart';
-import '../../domain/repositories/localization_repository.dart';
-import '../datasources/localization_data_source.dart';
-
-/// Implementation of the localization repository
-class LocalizationRepositoryImpl implements LocalizationRepository {
-  final LocalizationDataSource _dataSource;
-  
-  LocalizationRepositoryImpl(this._dataSource);
-  
-  @override
-  Future<Either<Failure, Locale>> getCurrentLocale() async {
-    try {
-      final locale = await _dataSource.getCurrentLocale();
-      return Right(locale);
-    } on Exception catch (e) {
-      return Left(CacheFailure(message: e.toString()));
+  // Add intl dependency if not already present
+  if (!content.contains('intl:')) {
+    final depPosition = content.indexOf('dependencies:');
+    if (depPosition != -1) {
+      // Find a good spot to insert intl dependency
+      final insertPosition = content.indexOf('\n\n', depPosition);
+      if (insertPosition != -1) {
+        final newContent = content.substring(0, insertPosition) +
+            '\n  intl: ^0.18.0' +
+            content.substring(insertPosition);
+        content = newContent;
+        modified = true;
+      }
     }
   }
-  
-  @override
-  Future<Either<Failure, void>> setLocale(Locale locale) async {
-    try {
-      await _dataSource.setLocale(locale);
-      return const Right(null);
-    } on Exception catch (e) {
-      return Left(CacheFailure(message: e.toString()));
+
+  // Add shared_preferences dependency if not already present
+  if (!content.contains('shared_preferences:')) {
+    final depPosition = content.indexOf('dependencies:');
+    if (depPosition != -1) {
+      // Find a good spot to insert dependency
+      final insertPosition = content.indexOf('\n\n', depPosition);
+      if (insertPosition != -1) {
+        final newContent = content.substring(0, insertPosition) +
+            '\n  shared_preferences: ^2.1.1' +
+            content.substring(insertPosition);
+        content = newContent;
+        modified = true;
+      }
     }
   }
-  
-  @override
-  Future<Either<Failure, List<Locale>>> getSupportedLocales() async {
-    try {
-      final locales = await _dataSource.getSupportedLocales();
-      return Right(locales);
-    } on Exception catch (e) {
-      return Left(CacheFailure(message: e.toString()));
+
+  // Enable Flutter's generation in pubspec.yaml
+  if (!content.contains('generate: true')) {
+    final flutterSection = content.indexOf('flutter:');
+    if (flutterSection != -1) {
+      // Find where to add generate: true
+      final insertPosition = content.indexOf('\n', flutterSection);
+      if (insertPosition != -1) {
+        final newContent = content.substring(0, insertPosition + 1) +
+            '  generate: true\n' +
+            content.substring(insertPosition + 1);
+        content = newContent;
+        modified = true;
+      }
     }
   }
-}
-''';
 
-  final repoImplFile = File(repoImplPath);
-  repoImplFile.writeAsStringSync(repoImplContent);
-  context.logger.info('Created file: $repoImplPath');
-
-  // Generate use cases
-  final usecasesPath =
-      '$projectName/lib/core/localization/domain/usecases/localization_usecases.dart';
-  final usecasesContent = '''
-import 'package:dartz/dartz.dart';
-import 'package:flutter/material.dart';
-
-import '../../../../error/failures/failure.dart';
-import '../repositories/localization_repository.dart';
-
-/// Use case to get the current locale
-class GetCurrentLocaleUseCase {
-  final LocalizationRepository repository;
-  
-  GetCurrentLocaleUseCase(this.repository);
-  
-  Future<Either<Failure, Locale>> execute() {
-    return repository.getCurrentLocale();
+  // Write updated content back to file
+  if (modified) {
+    pubspecFile.writeAsStringSync(content);
+    context.logger
+        .success('Updated pubspec.yaml with localization dependencies');
+  } else {
+    context.logger.info('pubspec.yaml already has localization dependencies');
   }
 }
 
-/// Use case to set a new locale
-class SetLocaleUseCase {
-  final LocalizationRepository repository;
-  
-  SetLocaleUseCase(this.repository);
-  
-  Future<Either<Failure, void>> execute(Locale locale) {
-    return repository.setLocale(locale);
+/// Update main.dart to initialize localization
+void _updateMainForLocalization(
+    HookContext context, String projectName, String stateManagement) {
+  final mainDartFile = File('$projectName/lib/main.dart');
+  if (!mainDartFile.existsSync()) {
+    context.logger
+        .warn('main.dart not found, skipping localization initialization');
+    return;
   }
-}
 
-/// Use case to get supported locales
-class GetSupportedLocalesUseCase {
-  final LocalizationRepository repository;
-  
-  GetSupportedLocalesUseCase(this.repository);
-  
-  Future<Either<Failure, List<Locale>>> execute() {
-    return repository.getSupportedLocales();
+  String content = mainDartFile.readAsStringSync();
+  bool modified = false;
+
+  // Add import for localization
+  if (!content.contains('localization.dart')) {
+    final importPattern = RegExp(r'import .*;\n');
+    final lastImportMatch = importPattern.allMatches(content).lastOrNull;
+
+    if (lastImportMatch != null) {
+      final insertPosition = lastImportMatch.end;
+      content = content.substring(0, insertPosition) +
+          "import 'package:$projectName/core/localization/localization.dart';\n" +
+          content.substring(insertPosition);
+      modified = true;
+    }
   }
-}
-''';
 
-  final usecasesFile = File(usecasesPath);
-  usecasesFile.writeAsStringSync(usecasesContent);
-  context.logger.info('Created file: $usecasesPath');
-}
+  // Add state management specific import
+  String stateManagementImport = '';
+  switch (stateManagement) {
+    case 'Bloc':
+    case 'BLoC':
+      if (!content.contains('bloc/locale_bloc.dart')) {
+        stateManagementImport =
+            "import 'package:$projectName/core/localization/bloc/locale_bloc.dart';\n";
+      }
+      break;
+    case 'Provider':
+      if (!content.contains('providers/localization_provider.dart')) {
+        stateManagementImport =
+            "import 'package:$projectName/core/localization/providers/localization_provider.dart';\n";
+      }
+      break;
+    case 'Riverpod':
+      if (!content.contains('providers/locale_provider.dart')) {
+        stateManagementImport =
+            "import 'package:$projectName/core/localization/providers/locale_provider.dart';\n";
+      }
+      break;
+    case 'GetX':
+      if (!content.contains('controllers/localization_controller.dart')) {
+        stateManagementImport =
+            "import 'package:$projectName/core/localization/controllers/localization_controller.dart';\n";
+      }
+      break;
+    case 'MobX':
+      if (!content.contains('stores/localization_store.dart')) {
+        stateManagementImport =
+            "import 'package:$projectName/core/localization/stores/localization_store.dart';\n";
+      }
+      break;
+    case 'Redux':
+      if (!content.contains('redux/locale_redux.dart')) {
+        stateManagementImport =
+            "import 'package:$projectName/core/localization/redux/locale_redux.dart';\n";
+      }
+      break;
+    default:
+      if (!content.contains('locale_manager.dart')) {
+        stateManagementImport =
+            "import 'package:$projectName/core/localization/locale_manager.dart';\n";
+      }
+      break;
+  }
 
-/// Complete localization system generation based on project configuration
-void generateCompleteLocalizationSystem(HookContext context, String projectName,
-    String stateManagement, String architecture) {
-  // Generate basic files
-  _generateLocalizationFile(context, projectName);
-  _generateL10nFile(context, projectName);
-  _generateL10nYamlFile(context, projectName);
-  _generateIntlEnArbFile(context, projectName);
-  _generateIntlEsArbFile(context, projectName);
+  if (stateManagementImport.isNotEmpty) {
+    final importPattern = RegExp(r'import .*;\n');
+    final lastImportMatch = importPattern.allMatches(content).lastOrNull;
 
-  // Generate generated files
-  _generateStringsDartFile(context, projectName);
-  _generateStringsEnDartFile(context, projectName);
-  _generateStringsEsDartFile(context, projectName);
+    if (lastImportMatch != null) {
+      final insertPosition = lastImportMatch.end;
+      content = content.substring(0, insertPosition) +
+          stateManagementImport +
+          content.substring(insertPosition);
+      modified = true;
+    }
+  }
 
-  // Generate example widget
-  _generateLanguageSelectorWidget(context, projectName);
+  // Update MaterialApp or similar widget to add localization delegates
+  if (!content.contains('localizationsDelegates:') &&
+      !content.contains('supportedLocales:')) {
+    // Define patterns for different app widgets
+    final materialAppPattern = RegExp(r'MaterialApp\(');
+    final cupertioAppPattern = RegExp(r'CupertinoApp\(');
+    final getMatAppPattern = RegExp(r'GetMaterialApp\(');
+    final providerScopePattern = RegExp(r'ProviderScope\(');
 
-  // Generate state management specific implementations
-  _generateLocalizationProvider(context, projectName, stateManagement);
-  _generateLocalizationController(context, projectName, stateManagement);
-  _generateLocalizationBloc(context, projectName, stateManagement);
+    if (materialAppPattern.hasMatch(content)) {
+      content = content.replaceAll(
+        'MaterialApp(',
+        'MaterialApp(\n      localizationsDelegates: Localization.localizationDelegates,\n      supportedLocales: Localization.supportedLocales,',
+      );
+      modified = true;
+    } else if (cupertioAppPattern.hasMatch(content)) {
+      content = content.replaceAll(
+        'CupertinoApp(',
+        'CupertinoApp(\n      localizationsDelegates: Localization.localizationDelegates,\n      supportedLocales: Localization.supportedLocales,',
+      );
+      modified = true;
+    } else if (getMatAppPattern.hasMatch(content)) {
+      content = content.replaceAll(
+        'GetMaterialApp(',
+        'GetMaterialApp(\n      localizationsDelegates: Localization.localizationDelegates,\n      supportedLocales: Localization.supportedLocales,',
+      );
+      modified = true;
+    }
+  }
 
-  // Generate architecture specific implementations
-  _generateLocalizationRepository(context, projectName, architecture);
+  // Add locale initialization based on state management
+  if (!content.contains('locale:')) {
+    String localeInitialization = '';
 
-  // Update pubspec.yaml and main.dart
-  _updatePubspecForLocalization(context, projectName);
-  _updateMainForLocalization(context, projectName);
+    switch (stateManagement) {
+      case 'Bloc':
+      case 'BLoC':
+        if (content.contains('MultiBlocProvider(')) {
+          // If MultiBlocProvider exists, add BlocProvider for LocaleBloc
+          final providerPattern = RegExp(r'providers: \[\s*');
+          if (providerPattern.hasMatch(content)) {
+            content = content.replaceFirst(
+              providerPattern,
+              'providers: [\n        BlocProvider(create: (_) => LocaleBloc()),\n        ',
+            );
+
+            // Also add the locale to MaterialApp/other app widget
+            final appPattern =
+                RegExp(r'(MaterialApp|CupertinoApp|GetMaterialApp)\(');
+            if (appPattern.hasMatch(content)) {
+              content = content.replaceFirst(
+                'supportedLocales: Localization.supportedLocales,',
+                'supportedLocales: Localization.supportedLocales,\n      locale: context.watch<LocaleBloc>().state.locale,',
+              );
+            }
+            modified = true;
+          }
+        } else {
+          // If no MultiBlocProvider, wrap with BlocProvider
+          final runAppPattern = RegExp(r'runApp\(\s*(const\s*)?(.*)\s*\);');
+          final match = runAppPattern.firstMatch(content);
+          if (match != null) {
+            final constKeyword = match.group(1) ?? '';
+            final appWidget = match.group(2) ?? '';
+
+            content = content.replaceFirst(
+              runAppPattern,
+              'runApp(\n    BlocProvider(\n      create: (_) => LocaleBloc(),\n      child: BlocBuilder<LocaleBloc, LocaleState>(\n        builder: (context, state) {\n          return $constKeyword$appWidget.copyWith(\n            locale: state.locale,\n          );\n        },\n      ),\n    ),\n  );',
+            );
+            modified = true;
+          }
+        }
+        break;
+
+      case 'Provider':
+        if (content.contains('MultiProvider(')) {
+          // If MultiProvider exists, add ChangeNotifierProvider for LocalizationProvider
+          final providerPattern = RegExp(r'providers: \[\s*');
+          if (providerPattern.hasMatch(content)) {
+            content = content.replaceFirst(
+              providerPattern,
+              'providers: [\n        ChangeNotifierProvider(create: (_) => LocalizationProvider()),\n        ',
+            );
+
+            // Also add the locale to MaterialApp/other app widget
+            final appPattern =
+                RegExp(r'(MaterialApp|CupertinoApp|GetMaterialApp)\(');
+            if (appPattern.hasMatch(content)) {
+              content = content.replaceFirst(
+                'supportedLocales: Localization.supportedLocales,',
+                'supportedLocales: Localization.supportedLocales,\n      locale: Provider.of<LocalizationProvider>(context).locale,',
+              );
+            }
+            modified = true;
+          }
+        } else {
+          // If no MultiProvider, wrap with ChangeNotifierProvider
+          final runAppPattern = RegExp(r'runApp\(\s*(const\s*)?(.*)\s*\);');
+          final match = runAppPattern.firstMatch(content);
+          if (match != null) {
+            final constKeyword = match.group(1) ?? '';
+            final appWidget = match.group(2) ?? '';
+
+            content = content.replaceFirst(
+              runAppPattern,
+              'runApp(\n    ChangeNotifierProvider(\n      create: (_) => LocalizationProvider(),\n      child: Consumer<LocalizationProvider>(\n        builder: (context, provider, _) {\n          return $constKeyword$appWidget.copyWith(\n            locale: provider.locale,\n          );\n        },\n      ),\n    ),\n  );',
+            );
+            modified = true;
+          }
+        }
+        break;
+
+      case 'Riverpod':
+        // Riverpod already wraps with ProviderScope, just add locale
+        final appPattern =
+            RegExp(r'(MaterialApp|CupertinoApp|GetMaterialApp)\(');
+        if (appPattern.hasMatch(content)) {
+          content = content.replaceFirst(
+            'supportedLocales: Localization.supportedLocales,',
+            'supportedLocales: Localization.supportedLocales,\n      locale: ref.watch(localeProvider),',
+          );
+          modified = true;
+        }
+        break;
+
+      case 'GetX':
+        // Add controller initialization to main function
+        final mainFunctionPattern = RegExp(r'void main\(\) async \{');
+        if (mainFunctionPattern.hasMatch(content)) {
+          content = content.replaceFirst(
+            mainFunctionPattern,
+            'void main() async {\n  // Initialize localization controller\n  Get.put(LocalizationController());\n',
+          );
+
+          // Also add locale to GetMaterialApp
+          final appPattern = RegExp(r'GetMaterialApp\(');
+          if (appPattern.hasMatch(content)) {
+            content = content.replaceFirst(
+              'supportedLocales: Localization.supportedLocales,',
+              'supportedLocales: Localization.supportedLocales,\n      locale: Get.find<LocalizationController>().locale,',
+            );
+          }
+          modified = true;
+        }
+        break;
+
+      case 'MobX':
+        // Add locale to app widget
+        final appPattern =
+            RegExp(r'(MaterialApp|CupertinoApp|GetMaterialApp)\(');
+        if (appPattern.hasMatch(content)) {
+          content = content.replaceFirst(
+            'supportedLocales: Localization.supportedLocales,',
+            'supportedLocales: Localization.supportedLocales,\n      locale: localizationStore.locale,',
+          );
+          modified = true;
+        }
+        break;
+
+      case 'Redux':
+        // Redux requires more complex changes - we'll just add locale to app state
+        // This is a simplification and would need more customization based on app structure
+        final appPattern =
+            RegExp(r'(MaterialApp|CupertinoApp|GetMaterialApp)\(');
+        if (appPattern.hasMatch(content)) {
+          content = content.replaceFirst(
+            'supportedLocales: Localization.supportedLocales,',
+            'supportedLocales: Localization.supportedLocales,\n      locale: store.state.localeState.locale,',
+          );
+
+          // Also add middleware for localization
+          final createStorePattern = RegExp(r'middleware: \[thunkMiddleware\]');
+          if (createStorePattern.hasMatch(content)) {
+            content = content.replaceAll(
+              'middleware: [thunkMiddleware]',
+              'middleware: [thunkMiddleware, ...createLocaleMiddleware()]',
+            );
+          }
+          modified = true;
+        }
+        break;
+
+      default:
+        // Add locale manager to app widget
+        final appPattern =
+            RegExp(r'(MaterialApp|CupertinoApp|GetMaterialApp)\(');
+        if (appPattern.hasMatch(content)) {
+          content = content.replaceFirst(
+            'supportedLocales: Localization.supportedLocales,',
+            'supportedLocales: Localization.supportedLocales,\n      locale: localeManager.locale,',
+          );
+
+          // Also add StatefulBuilder to update on locale changes
+          final runAppPattern = RegExp(r'runApp\(\s*(const\s*)?(.*)\s*\);');
+          final match = runAppPattern.firstMatch(content);
+          if (match != null) {
+            final constKeyword = match.group(1) ?? '';
+            final appWidget = match.group(2) ?? '';
+
+            content = content.replaceFirst(
+              runAppPattern,
+              'runApp(\n    StatefulBuilder(\n      builder: (context, setState) {\n        // Listen for locale changes\n        localeManager.addListener((_) => setState(() {}));\n        return $constKeyword$appWidget;\n      },\n    ),\n  );',
+            );
+          }
+
+          modified = true;
+        }
+        break;
+    }
+  }
+
+  // Write updated content back to file
+  if (modified) {
+    mainDartFile.writeAsStringSync(content);
+    context.logger.success('Updated main.dart with localization configuration');
+  } else {
+    context.logger.info('main.dart already has localization configuration');
+  }
 }

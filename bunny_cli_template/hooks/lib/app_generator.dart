@@ -42,6 +42,7 @@ void generateAppWidget(
 }
 
 /// Generate the main app.dart file
+/// Generate the main app.dart file
 void _generateAppDartFile(
     HookContext context,
     String projectName,
@@ -58,109 +59,111 @@ void _generateAppDartFile(
 
   // Determine imports based on modules and features
   final themeImport = modules.contains('Theme Manager')
-      ? "import 'package:$projectName/core/design_system/theme_extension/app_theme_extension.dart';\n"
+      ? "import 'package:$projectName/core/design_system/theme_extension/app_theme_extension.dart';\n" +
+          "import 'package:$projectName/core/design_system/theme_extension/theme_manager.dart';\n"
       : '';
 
   final localizationImport = modules.contains('Localization')
-      ? "import 'package:$projectName/core/localization/generated/strings.dart';" +
-          "\nimport 'package:flutter_localizations/flutter_localizations.dart';" +
-          "\n" +
-          (modules.contains('Localization') && stateManagement != 'default'
-              ? "\nimport 'package:$projectName/core/localization/localization.dart';"
-              : '')
+      ? "import 'package:$projectName/core/localization/localization.dart';\n" +
+          "import 'package:flutter_localizations/flutter_localizations.dart';\n" +
+          "import 'package:$projectName/core/localization/generated/app_localizations.dart';\n"
       : '';
 
-  final getXLocalizationImport = modules.contains('Localization')
-      ? stateManagement == 'GetX'
-          ? "import 'package:get/get.dart';" +
-              "\nimport 'package:$projectName/core/design_system/theme_extension/theme_manager.dart';"
-          : ""
-      : "";
+  final pushNotificationImport = modules.contains('Push Notification')
+      ? "import 'package:$projectName/core/notifications/notification_handler.dart';\n"
+      : '';
 
-  // Determine home page based on features
-  String homePageImport = '';
-  String homePage = 'const Scaffold(body: Center(child: Text(\'Welcome\')))';
-
-  if (features.contains('Authentication')) {
-    if (architecture == 'MVVM') {
-      homePageImport =
-          "import 'package:$projectName/features/authentication/views/authentication_view.dart';";
-    } else if (architecture == 'MVC') {
-      homePageImport =
-          "import 'package:$projectName/features/authentication/views/authentication_view.dart';";
-    } else if (architecture == 'Clean Architecture') {
-      homePageImport =
-          "import 'package:$projectName/features/authentication/presentation/pages/authentication_page.dart';";
-    } else {
-      homePageImport =
-          "import 'package:$projectName/features/authentication/presentation/pages/authentication_page.dart';";
-    }
-    if (architecture == 'MVVM') {
-      homePage = 'const AuthenticationView()';
-    } else if (architecture == 'MVC') {
-      homePage = 'const AuthenticationView()';
-    } else if (architecture == 'Clean Architecture') {
-      homePage = 'const AuthenticationPage()';
-    } else {
-      homePage = 'const AuthenticationPage()';
-    }
-  } else if (features.contains('Dashboard')) {
-    homePageImport =
-        "import 'package:$projectName/features/dashboard/presentation/pages/dashboard_page.dart';";
-    homePage = 'const DashboardPage()';
-  } else if (features.contains('Home')) {
-    homePageImport =
-        "import 'package:$projectName/features/home/presentation/pages/home_page.dart';";
-    homePage = 'const HomePage()';
-  } else if (features.isNotEmpty) {
-    // Get the first feature if no priority features are present
-    final firstFeature =
-        features[0].toString().toLowerCase().replaceAll(' ', '_');
-    if (architecture == 'MVVM') {
-      "import 'package:$projectName/features/$firstFeature/views/$firstFeature.dart';";
-    } else if (architecture == 'MVC') {
-      "import 'package:$projectName/features/$firstFeature/views/$firstFeature.dart';";
-    } else if (architecture == 'Clean Architecture') {
-      "import 'package:$projectName/features/$firstFeature/pages/$firstFeature.dart';";
-    } else {
-      homePageImport =
-          "import 'package:$projectName/features/$firstFeature/presentation/pages/${firstFeature}_page.dart';";
-    }
-
-    homePage = 'const ${toClassName(firstFeature)}Page()';
+  // Import specific state management libraries
+  String stateManagementImport = '';
+  switch (stateManagement) {
+    case 'Bloc':
+    case 'BLoC':
+      stateManagementImport =
+          "import 'package:flutter_bloc/flutter_bloc.dart';\n";
+      // if (modules.contains('Theme Manager')) {
+      //   stateManagementImport +=
+      //       "import 'package:$projectName/core/design_system/theme_extension/theme_cubit.dart';\n";
+      // }
+      if (modules.contains('Localization')) {
+        stateManagementImport +=
+            "import 'package:$projectName/core/localization/bloc/locale_bloc.dart';\n";
+      }
+      break;
+    case 'Provider':
+      stateManagementImport = "import 'package:provider/provider.dart';\n";
+      if (modules.contains('Theme Manager')) {
+        stateManagementImport +=
+            "import 'package:$projectName/core/design_system/theme_extension/theme_provider.dart';\n";
+      }
+      if (modules.contains('Localization')) {
+        stateManagementImport +=
+            "import 'package:$projectName/core/localization/providers/localization_provider.dart';\n";
+      }
+      break;
+    case 'Riverpod':
+      stateManagementImport =
+          "import 'package:flutter_riverpod/flutter_riverpod.dart';\n";
+      break;
+    case 'GetX':
+      stateManagementImport = "import 'package:get/get.dart';\n";
+      break;
+    case 'MobX':
+      stateManagementImport =
+          "import 'package:flutter_mobx/flutter_mobx.dart';\nimport 'package:mobx/mobx.dart';\n";
+      break;
+    case 'Redux':
+      stateManagementImport =
+          "import 'package:flutter_redux/flutter_redux.dart';\nimport 'package:redux/redux.dart';\n";
+      break;
   }
 
-  // Handle routing if needed
-  final routerImport =
-      modules.contains('Routing') ? "import 'app_router.dart';" : '';
+  // Always import the FlutterBunnyScreen
+  final bunnyScreenImport =
+      "import 'package:$projectName/app/app_flutter_bunny.dart';\n";
 
   // Generate App class based on state management
   String appClass = '';
+  String appInitInMain = ''; // For initialization needed in main.dart
 
-  // First determine if we need stateful or stateless widget
-  // For Provider, BLoC, Redux, MobX, and Riverpod, we use a stateless widget since state is managed externally
-  // For default or other state management solutions, we need to use a stateful widget to manage theme and locale
-  bool isStatefulApp = stateManagement == 'default' ||
-      (!['Provider', 'Bloc', 'BLoC', 'Redux', 'MobX', 'Riverpod', 'GetX']
-          .contains(stateManagement));
-
-  if (isStatefulApp) {
-    // Stateful App for internal state management
-    appClass = _generateStatefulAppClass(projectName, stateManagement, modules);
-  } else {
-    // Stateless App for external state management
-    appClass = _generateStatelessAppClass(
-        projectName, stateManagement, modules, homePage);
+  switch (stateManagement) {
+    case 'Bloc':
+    case 'BLoC':
+      appClass = _generateBlocAppClass(projectName, modules);
+      break;
+    case 'Provider':
+      appClass = _generateProviderAppClass(projectName, modules);
+      break;
+    case 'Riverpod':
+      appClass = _generateRiverpodAppClass(projectName, modules);
+      break;
+    case 'GetX':
+      appClass = _generateGetXAppClass(projectName, modules);
+      appInitInMain = "// Initialize GetX controllers\n" +
+          "${modules.contains('Theme Manager') ? "Get.put(ThemeController());\n" : ""}" +
+          "${modules.contains('Localization') ? "Get.put(LocalizationController());\n" : ""}";
+      break;
+    case 'MobX':
+      appClass = _generateMobXAppClass(projectName, modules);
+      break;
+    case 'Redux':
+      appClass = _generateReduxAppClass(projectName, modules);
+      break;
+    default:
+      appClass = _generateDefaultAppClass(projectName, modules);
+      break;
   }
 
   final content = '''
 import 'package:flutter/material.dart';
+$stateManagementImport
 $themeImport
 $localizationImport
-$getXLocalizationImport
-$homePageImport
-$routerImport
+$pushNotificationImport
+$bunnyScreenImport
+
 $appClass
+
+$appInitInMain
 ''';
 
   final file = File(filePath);
@@ -168,209 +171,341 @@ $appClass
   context.logger.info('Created file: $filePath');
 }
 
-/// Generate a stateless App class for external state management
-String _generateStatelessAppClass(String projectName, String stateManagement,
-    List<dynamic> modules, String homePage) {
-  // Theme code based on state management
-  String themeCode = '';
-  if (modules.contains('Theme Manager')) {
-    switch (stateManagement) {
-      case 'Provider':
-        themeCode = '''
-      // Theme configured from Provider
+/// Generate BLoC implementation of App
+String _generateBlocAppClass(String projectName, List<dynamic> modules) {
+  final hasTheme = modules.contains('Theme Manager');
+  final hasLocalization = modules.contains('Localization');
+  final hasPushNotification = modules.contains('Push Notification');
+
+  final blocProviders = [
+    hasTheme ? 'BlocProvider(create: (_) => ThemeCubit()),' : '',
+    hasLocalization ? 'BlocProvider(create: (_) => LocaleBloc()),' : '',
+  ].where((provider) => provider.isNotEmpty).join('\n        ');
+
+
+
+  final themeConfig = hasTheme
+      ? '''
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      themeMode: themeMode ?? ThemeMode.system,''';
-        break;
-      case 'Bloc':
-      case 'BLoC':
-        themeCode = '''
-      // Theme configured from BLoC
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: themeMode ?? ThemeMode.system,''';
-        break;
-      case 'Riverpod':
-        themeCode = '''
-      // Theme configured from Riverpod
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: themeMode ?? ThemeMode.system,''';
-        break;
-      case 'GetX':
-        themeCode = '''
-      // Theme is configured in GetMaterialApp through GetX controller''';
-        break;
-      case 'MobX':
-        themeCode = '''
-      // Theme configured from MobX store
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: themeMode ?? ThemeMode.system,''';
-        break;
-      case 'Redux':
-        themeCode = '''
-      // Theme configured from Redux store
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: themeMode ?? ThemeMode.system,''';
-        break;
-      default:
-        themeCode = '''
-      // Default theme configuration
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: themeMode ?? ThemeMode.system,''';
-    }
-  } else {
-    // No Theme Manager module
-    themeCode = '''
-      // Default theme configuration
+      themeMode: context.watch<ThemeCubit>().state.themeMode.toThemeMode(),'''
+      : '''
       theme: ThemeData.light(useMaterial3: true),
-      darkTheme: ThemeData.dark(useMaterial3: true),
-      themeMode: themeMode ?? ThemeMode.system,''';
-  }
+      darkTheme: ThemeData.dark(useMaterial3: true),''';
 
-  // Localization code based on state management
-  String localizationCode = '';
-  if (modules.contains('Localization')) {
-    switch (stateManagement) {
-      case 'Provider':
-        localizationCode = '''
-      // Default localization configuration
-      supportedLocales: const [Locale('en', '')],
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],''';
-      case 'BLoC':
-        localizationCode = '''
-      // Default localization configuration
-      supportedLocales: const [Locale('en', '')],
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],''';
-      case 'Riverpod':
-        localizationCode = '''
-      // Default localization configuration
-      supportedLocales: const [Locale('en', '')],
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],''';
-      case 'MobX':
-        localizationCode = '''
-      // Default localization configuration
-      supportedLocales: const [Locale('en', '')],
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],''';
-      case 'Redux':
-        localizationCode = '''
-      // Localization configuration
-      supportedLocales: Strings.supportedLocales,
-      localizationsDelegates: Strings.localizationsDelegates,
-      locale: locale,''';
-        break;
-      case 'GetX':
-        // GetX handles localization differently through GetMaterialApp
-        localizationCode = '''
-      // Localization is configured in GetMaterialApp''';
-        break;
-      default:
-        localizationCode = '''
-      // Localization configuration
-      supportedLocales: Strings.supportedLocales,
-      localizationsDelegates: Strings.localizationsDelegates,''';
-    }
-  }
+  final localizationConfig = hasLocalization
+      ? '''
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      locale: context.watch<LocaleBloc>().state.locale,'''
+      : '';
 
-  String constructor = '';
-  if (stateManagement == 'GetX') {
-    // GetX doesn't need themeMode or locale in constructor
-    constructor = '''
-  /// Creates a new App instance.
-  const App({Key? key}) : super(key: key);''';
-  } else {
-    // Other state management solutions need themeMode and potentially locale
-    String localeParam =
-        modules.contains('Localization') ? 'this.locale, ' : '';
-    constructor = '''
-  /// Creates a new App instance.
-  const App({
-    Key? key, 
-    this.themeMode${modules.contains('Localization') ? ', this.locale' : ''}
-  }) : super(key: key);''';
-  }
-
-  // For GetX, we need a different approach as it requires GetMaterialApp
-  if (stateManagement == 'GetX') {
-    return '''
-/// Main App widget using GetX architecture.
-///
-/// This is the root widget of the application that sets up the GetMaterialApp
-/// with appropriate theme, localization, and routing configurations.
+  return '''
+/// Main App widget that configures the application using BLoC pattern.
 class App extends StatelessWidget {
-  $constructor
+  /// Creates a new App instance.
+  const App({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiBlocProvider(
+      providers: [
+        $blocProviders
+      ],
+      child: Builder(
+        builder: (context) {
+          return MaterialApp(
+            title: '$projectName',
+            debugShowCheckedModeBanner: false,
+$themeConfig
+$localizationConfig
+            home: const FlutterBunnyScreen(),
+          );
+        },
+      ),
+    );
+  }
+}
+''';
+}
+
+/// Generate Provider implementation of App
+String _generateProviderAppClass(String projectName, List<dynamic> modules) {
+  final hasTheme = modules.contains('Theme Manager');
+  final hasLocalization = modules.contains('Localization');
+  final hasPushNotification = modules.contains('Push Notification');
+
+  final providers = [
+    hasTheme ? 'ChangeNotifierProvider(create: (_) => ThemeProvider()),' : '',
+    hasLocalization
+        ? 'ChangeNotifierProvider(create: (_) => LocalizationProvider()),'
+        : '',
+  ].where((provider) => provider.isNotEmpty).join('\n        ');
+
+  final themeConfig = hasTheme
+      ? '''
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: Provider.of<ThemeProvider>(context).themeMode,'''
+      : '''
+      theme: ThemeData.light(useMaterial3: true),
+      darkTheme: ThemeData.dark(useMaterial3: true),''';
+
+  final localizationConfig = hasLocalization
+      ? '''
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      locale: Provider.of<LocalizationProvider>(context).locale,'''
+      : '';
+
+  return '''
+/// Main App widget that configures the application using Provider pattern.
+class App extends StatelessWidget {
+  /// Creates a new App instance.
+  const App({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        $providers
+      ],
+      child: Builder(
+        builder: (context) {
+          return MaterialApp(
+            title: '$projectName',
+            debugShowCheckedModeBanner: false,
+$themeConfig
+$localizationConfig
+            home: const FlutterBunnyScreen(),
+          );
+        },
+      ),
+    );
+  }
+}
+''';
+}
+
+/// Generate Riverpod implementation of App
+String _generateRiverpodAppClass(String projectName, List<dynamic> modules) {
+  final hasTheme = modules.contains('Theme Manager');
+  final hasLocalization = modules.contains('Localization');
+  final hasPushNotification = modules.contains('Push Notification');
+
+  final themeConfig = hasTheme
+      ? '''
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ref.watch(flutterThemeModeProvider),'''
+      : '''
+      theme: ThemeData.light(useMaterial3: true),
+      darkTheme: ThemeData.dark(useMaterial3: true),''';
+
+  final localizationConfig = hasLocalization
+      ? '''
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      locale: ref.watch(localeProvider),'''
+      : '';
+
+  return '''
+/// Main App widget that configures the application using Riverpod.
+class App extends StatelessWidget {
+  /// Creates a new App instance.
+  const App({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return ProviderScope(
+      child: Consumer(
+        builder: (context, ref, _) {
+          return MaterialApp(
+            title: '$projectName',
+            debugShowCheckedModeBanner: false,
+$themeConfig
+$localizationConfig
+            home: const FlutterBunnyScreen(),
+          );
+        },
+      ),
+    );
+  }
+}
+''';
+}
+
+/// Generate GetX implementation of App
+String _generateGetXAppClass(String projectName, List<dynamic> modules) {
+  final hasTheme = modules.contains('Theme Manager');
+  final hasLocalization = modules.contains('Localization');
+  final hasPushNotification = modules.contains('Push Notification');
+
+  final themeConfig = hasTheme
+      ? '''
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: Get.find<ThemeController>().themeMode,'''
+      : '''
+      theme: ThemeData.light(useMaterial3: true),
+      darkTheme: ThemeData.dark(useMaterial3: true),''';
+
+  final localizationConfig = hasLocalization
+      ? '''
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      locale: Get.find<LocalizationController>().locale,
+      translations: AppTranslations(),'''
+      : '';
+
+  return '''
+/// Main App widget that configures the application using GetX.
+class App extends StatelessWidget {
+  /// Creates a new App instance.
+  const App({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: '${projectName}',
+      title: '$projectName',
       debugShowCheckedModeBanner: false,
-      ${modules.contains('Theme Manager') ? '// Theme is managed by GetX controller\ntheme: AppTheme.light,\ndarkTheme: AppTheme.dark,\nthemeMode: Get.find<ThemeController>().themeMode,' : ''}
-      ${modules.contains('Localization') ? '// Localization is managed by GetX\nsupportedLocales: Strings.supportedLocales,\nlocalizationsDelegates: Strings.localizationsDelegates,' : ''}
-      ${modules.contains('Routing') ? '// Routing configuration\ninitialRoute: \'/\',\ngetPages: AppPages.routes,' : 'home: $homePage,'}
+$themeConfig
+$localizationConfig
+      home: const FlutterBunnyScreen(),
     );
   }
-}''';
-  }
+}
+''';
+}
 
-  // For other state management approaches
+/// Generate MobX implementation of App
+String _generateMobXAppClass(String projectName, List<dynamic> modules) {
+  final hasTheme = modules.contains('Theme Manager');
+  final hasLocalization = modules.contains('Localization');
+  final hasPushNotification = modules.contains('Push Notification');
+
+  final themeConfig = hasTheme
+      ? '''
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: themeStore.flutterThemeMode,'''
+      : '''
+      theme: ThemeData.light(useMaterial3: true),
+      darkTheme: ThemeData.dark(useMaterial3: true),''';
+
+  final localizationConfig = hasLocalization
+      ? '''
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      locale: localizationStore.locale,'''
+      : '';
+
   return '''
-/// Main App widget that configures the application.
-///
-/// This is the root widget of the application that sets up the MaterialApp
-/// with appropriate theme, localization, and routing configurations.
+/// Main App widget that configures the application using MobX.
 class App extends StatelessWidget {
-  /// The theme mode to use for the app.
-  final ThemeMode? themeMode;
-  ${modules.contains('Localization') ? '\n  /// The locale to use for the app.\n  final Locale? locale;' : ''}
-
-  $constructor
+  /// Creates a new App instance.
+  const App({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: '${projectName}',
-      debugShowCheckedModeBanner: false,
-$themeCode
-$localizationCode
-      ${modules.contains('Routing') ? '// Routing configuration\ninitialRoute: \'/\',\nonGenerateRoute: AppRouter.onGenerateRoute,' : '// Set the home page based on selected features\nhome: $homePage,'}
+    return Observer(
+      builder: (_) {
+        return MaterialApp(
+          title: '$projectName',
+          debugShowCheckedModeBanner: false,
+$themeConfig
+$localizationConfig
+          home: const FlutterBunnyScreen(),
+        );
+      },
     );
   }
-}''';
+}
+''';
 }
 
-/// Generate a stateful App class for internal state management
-String _generateStatefulAppClass(
-    String projectName, String stateManagement, List<dynamic> modules) {
-  // Get theme initialization code for stateful app
-  String themeInitCode = modules.contains('Theme Manager')
+/// Generate Redux implementation of App
+String _generateReduxAppClass(String projectName, List<dynamic> modules) {
+  final hasTheme = modules.contains('Theme Manager');
+  final hasLocalization = modules.contains('Localization');
+  final hasPushNotification = modules.contains('Push Notification');
+
+  String themeBuilder = hasTheme
+      ? '''StoreConnector<AppState, ThemeMode>(
+        converter: (store) => store.state.themeState.flutterThemeMode,
+        builder: (context, themeMode) {'''
+      : '';
+
+  String localeBuilder = hasLocalization
+      ? '''StoreConnector<AppState, Locale>(
+          converter: (store) => store.state.localeState.locale,
+          builder: (context, locale) {'''
+      : '';
+
+  String endBuilders = '';
+  if (hasTheme) endBuilders += '        })';
+  if (hasLocalization) endBuilders += '          })';
+
+  final themeConfig = hasTheme
+      ? '''
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: themeMode,'''
+      : '''
+            theme: ThemeData.light(useMaterial3: true),
+            darkTheme: ThemeData.dark(useMaterial3: true),''';
+
+  final localizationConfig = hasLocalization
+      ? '''
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            locale: locale,'''
+      : '';
+
+  return '''
+/// Main App widget that configures the application using Redux.
+class App extends StatelessWidget {
+  final Store<AppState> store;
+
+  /// Creates a new App instance with the Redux store.
+  const App({Key? key, required this.store}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return StoreProvider<AppState>(
+      store: store,
+      child: ${themeBuilder}
+        ${localeBuilder}
+          return MaterialApp(
+            title: '$projectName',
+            debugShowCheckedModeBanner: false,
+$themeConfig
+$localizationConfig
+            home: const FlutterBunnyScreen(),
+          );
+        ${endBuilders}
+      ),
+    );
+  }
+}
+''';
+}
+
+/// Generate default implementation of App with internal state management
+String _generateDefaultAppClass(String projectName, List<dynamic> modules) {
+  final hasTheme = modules.contains('Theme Manager');
+  final hasLocalization = modules.contains('Localization');
+  final hasPushNotification = modules.contains('Push Notification');
+
+  String themeInit = hasTheme
       ? '''
   ThemeMode _themeMode = ThemeMode.system;
   
   @override
   void initState() {
     super.initState();
-    // Initialize theme from theme manager
     _initializeTheme();
+    ${hasLocalization ? '_initializeLocale();' : ''}
   }
   
   Future<void> _initializeTheme() async {
@@ -391,70 +526,51 @@ String _generateStatefulAppClass(
   
   @override
   void dispose() {
-    // Remove theme listener
     themeManager.removeListener(_onThemeChanged);
     super.dispose();
   }'''
-      : '''
-  ThemeMode _themeMode = ThemeMode.system;
-  
-  @override
-  void initState() {
-    super.initState();
-    // No theme manager module, using system default
-  }''';
+      : '';
 
-  // Get localization initialization code for stateful app
-  String localizationInitCode = '';
-  if (modules.contains('Localization')) {
-    localizationInitCode = '''
+  String localeInit = hasLocalization
+      ? '''
   Locale _locale = const Locale('en');
-  
-  @override
-  void initState() {
-    super.initState();
-    // Initialize locale from saved preference
-    _initializeLocale();
-  }
+
+  ${!hasTheme ? '@override\n  void initState() {\n    super.initState();\n    _initializeLocale();\n  }\n' : ''}
   
   Future<void> _initializeLocale() async {
-    // Implementation would depend on how you're storing locale preferences
-    // Example implementation with shared preferences:
-    // final prefs = await SharedPreferences.getInstance();
-    // final languageCode = prefs.getString('language_code') ?? 'en';
-    // setState(() {
-    //   _locale = Locale(languageCode);
-    // });
-  }
-  
-  void _setLocale(Locale locale) {
-    setState(() {
-      _locale = locale;
-    });
-    // Save preference
-    // final prefs = await SharedPreferences.getInstance();
-    // prefs.setString('language_code', locale.languageCode);
-  }''';
-  }
+    // Implementation depends on how locale is stored
+    if (localeManager != null) {
+      setState(() {
+        _locale = localeManager.locale;
+      });
+      
+      localeManager.addListener((locale) {
+        setState(() {
+          _locale = locale;
+        });
+      });
+    }
+  }'''
+      : '';
 
-  // Combine initState methods if both theme and localization are present
-  if (modules.contains('Theme Manager') && modules.contains('Localization')) {
-    themeInitCode = themeInitCode.replaceFirst(
-        '@override\n  void initState() {\n    super.initState();\n    // Initialize theme from theme manager\n    _initializeTheme();\n  }',
-        '@override\n  void initState() {\n    super.initState();\n    // Initialize theme and locale\n    _initializeTheme();\n    _initializeLocale();\n  }');
+  final themeConfig = hasTheme
+      ? '''
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: _themeMode,'''
+      : '''
+      theme: ThemeData.light(useMaterial3: true),
+      darkTheme: ThemeData.dark(useMaterial3: true),''';
 
-    // Remove duplicate initState from localizationInitCode
-    localizationInitCode = localizationInitCode.replaceFirst(
-        '@override\n  void initState() {\n    super.initState();\n    // Initialize locale from saved preference\n    _initializeLocale();\n  }',
-        '');
-  }
+  final localizationConfig = hasLocalization
+      ? '''
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      locale: _locale,'''
+      : '';
 
-  // Build class with appropriate state variables
   return '''
-/// Main App widget with internal state management.
-///
-/// This widget handles theme and localization state internally
-/// since no external state management solution is used.
+/// Main App widget that configures the application with internal state management.
 class App extends StatefulWidget {
   /// Creates a new App instance.
   const App({Key? key}) : super(key: key);
@@ -464,31 +580,344 @@ class App extends StatefulWidget {
 }
 
 class _AppState extends State<App> {
-$themeInitCode
-$localizationInitCode
+$themeInit
+$localeInit
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: '$projectName',
       debugShowCheckedModeBanner: false,
-      ${modules.contains('Theme Manager') ? '// Theme configuration\ntheme: AppTheme.light,\ndarkTheme: AppTheme.dark,\nthemeMode: _themeMode,' : '// Default theme configuration\ntheme: ThemeData.light(useMaterial3: true),\ndarkTheme: ThemeData.dark(useMaterial3: true),\nthemeMode: _themeMode,'}
-      ${modules.contains('Localization') ? '// Localization configuration\nsupportedLocales: Strings.supportedLocales,\nlocalizationsDelegates: Strings.localizationsDelegates,\nlocale: _locale,' : '// Default localization configuration\nsupportedLocales: const [Locale(\'en\', \'\')],\nlocalizationsDelegates: const [\n  GlobalMaterialLocalizations.delegate,\n  GlobalWidgetsLocalizations.delegate,\n  GlobalCupertinoLocalizations.delegate,\n],'}
-      ${modules.contains('Routing') ? '// Routing configuration\ninitialRoute: \'/\',\nonGenerateRoute: AppRouter.onGenerateRoute,' : '// Home page\nhome: _buildHomePage(),'}
+$themeConfig
+$localizationConfig
+      home: const FlutterBunnyScreen(),
     );
   }
-  
-  Widget _buildHomePage() {
-    // Determine home page based on features
-    // This would be dynamically generated based on selected features
-    return const Scaffold(
-      body: Center(
-        child: Text('Welcome to $projectName'),
-      ),
-    );
-  }
-}''';
 }
+''';
+}
+
+// /// Generate a stateless App class for external state management
+// String _generateStatelessAppClass(String projectName, String stateManagement,
+//     List<dynamic> modules, String homePage) {
+//   // Theme code based on state management
+//   String themeCode = '';
+//   if (modules.contains('Theme Manager')) {
+//     switch (stateManagement) {
+//       case 'Provider':
+//         themeCode = '''
+//       // Theme configured from Provider
+//       theme: AppTheme.light,
+//       darkTheme: AppTheme.dark,
+//       themeMode: themeMode ?? ThemeMode.system,''';
+//         break;
+//       case 'Bloc':
+//       case 'BLoC':
+//         themeCode = '''
+//       // Theme configured from BLoC
+//       theme: AppTheme.light,
+//       darkTheme: AppTheme.dark,
+//       themeMode: themeMode ?? ThemeMode.system,''';
+//         break;
+//       case 'Riverpod':
+//         themeCode = '''
+//       // Theme configured from Riverpod
+//       theme: AppTheme.light,
+//       darkTheme: AppTheme.dark,
+//       themeMode: themeMode ?? ThemeMode.system,''';
+//         break;
+//       case 'GetX':
+//         themeCode = '''
+//       // Theme is configured in GetMaterialApp through GetX controller''';
+//         break;
+//       case 'MobX':
+//         themeCode = '''
+//       // Theme configured from MobX store
+//       theme: AppTheme.light,
+//       darkTheme: AppTheme.dark,
+//       themeMode: themeMode ?? ThemeMode.system,''';
+//         break;
+//       case 'Redux':
+//         themeCode = '''
+//       // Theme configured from Redux store
+//       theme: AppTheme.light,
+//       darkTheme: AppTheme.dark,
+//       themeMode: themeMode ?? ThemeMode.system,''';
+//         break;
+//       default:
+//         themeCode = '''
+//       // Default theme configuration
+//       theme: AppTheme.light,
+//       darkTheme: AppTheme.dark,
+//       themeMode: themeMode ?? ThemeMode.system,''';
+//     }
+//   } else {
+//     // No Theme Manager module
+//     themeCode = '''
+//       // Default theme configuration
+//       theme: ThemeData.light(useMaterial3: true),
+//       darkTheme: ThemeData.dark(useMaterial3: true),
+//       themeMode: themeMode ?? ThemeMode.system,''';
+//   }
+
+//   // Localization code based on state management
+//   String localizationCode = '';
+//   if (modules.contains('Localization')) {
+//     switch (stateManagement) {
+//       case 'Provider':
+//         localizationCode = '''
+//       // Default localization configuration
+//       supportedLocales: const [Locale('en', '')],
+//       localizationsDelegates: const [
+//         GlobalMaterialLocalizations.delegate,
+//         GlobalWidgetsLocalizations.delegate,
+//         GlobalCupertinoLocalizations.delegate,
+//       ],''';
+//       case 'BLoC':
+//         localizationCode = '''
+//       // Default localization configuration
+//       supportedLocales: const [Locale('en', '')],
+//       localizationsDelegates: const [
+//         GlobalMaterialLocalizations.delegate,
+//         GlobalWidgetsLocalizations.delegate,
+//         GlobalCupertinoLocalizations.delegate,
+//       ],''';
+//       case 'Riverpod':
+//         localizationCode = '''
+//       // Default localization configuration
+//       supportedLocales: const [Locale('en', '')],
+//       localizationsDelegates: const [
+//         GlobalMaterialLocalizations.delegate,
+//         GlobalWidgetsLocalizations.delegate,
+//         GlobalCupertinoLocalizations.delegate,
+//       ],''';
+//       case 'MobX':
+//         localizationCode = '''
+//       // Default localization configuration
+//       supportedLocales: const [Locale('en', '')],
+//       localizationsDelegates: const [
+//         GlobalMaterialLocalizations.delegate,
+//         GlobalWidgetsLocalizations.delegate,
+//         GlobalCupertinoLocalizations.delegate,
+//       ],''';
+//       case 'Redux':
+//         localizationCode = '''
+//       // Localization configuration
+//       supportedLocales: AppLocalizations.supportedLocales,
+//       localizationsDelegates: AppLocalizations.localizationsDelegates,
+//       locale: locale,''';
+//         break;
+//       case 'GetX':
+//         // GetX handles localization differently through GetMaterialApp
+//         localizationCode = '''
+//       // Localization is configured in GetMaterialApp''';
+//         break;
+//       default:
+//         localizationCode = '''
+//       // Localization configuration
+//       supportedLocales: Strings.supportedLocales,
+//       localizationsDelegates: Strings.localizationsDelegates,''';
+//     }
+//   }
+
+//   String constructor = '';
+//   if (stateManagement == 'GetX') {
+//     // GetX doesn't need themeMode or locale in constructor
+//     constructor = '''
+//   /// Creates a new App instance.
+//   const App({Key? key}) : super(key: key);''';
+//   } else {
+//     // Other state management solutions need themeMode and potentially locale
+//     String localeParam =
+//         modules.contains('Localization') ? 'this.locale, ' : '';
+//     constructor = '''
+//   /// Creates a new App instance.
+//   const App({
+//     Key? key, 
+//     this.themeMode${modules.contains('Localization') ? ', this.locale' : ''}
+//   }) : super(key: key);''';
+//   }
+
+//   // For GetX, we need a different approach as it requires GetMaterialApp
+//   if (stateManagement == 'GetX') {
+//     return '''
+// /// Main App widget using GetX architecture.
+// ///
+// /// This is the root widget of the application that sets up the GetMaterialApp
+// /// with appropriate theme, localization, and routing configurations.
+// class App extends StatelessWidget {
+//   $constructor
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return GetMaterialApp(
+//       title: '${projectName}',
+//       debugShowCheckedModeBanner: false,
+//       ${modules.contains('Theme Manager') ? '// Theme is managed by GetX controller\ntheme: AppTheme.light,\ndarkTheme: AppTheme.dark,\nthemeMode: Get.find<ThemeController>().themeMode,' : ''}
+//       ${modules.contains('Localization') ? '// Localization is managed by GetX\nsupportedLocales: Strings.supportedLocales,\nlocalizationsDelegates: Strings.localizationsDelegates,' : ''}
+//       ${modules.contains('Routing') ? '// Routing configuration\ninitialRoute: \'/\',\ngetPages: AppPages.routes,' : 'home: $homePage,'}
+//     );
+//   }
+// }''';
+//   }
+
+//   // For other state management approaches
+//   return '''
+// /// Main App widget that configures the application.
+// ///
+// /// This is the root widget of the application that sets up the MaterialApp
+// /// with appropriate theme, localization, and routing configurations.
+// class App extends StatelessWidget {
+//   /// The theme mode to use for the app.
+//   final ThemeMode? themeMode;
+//   ${modules.contains('Localization') ? '\n  /// The locale to use for the app.\n  final Locale? locale;' : ''}
+
+//   $constructor
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp(
+//       title: '${projectName}',
+//       debugShowCheckedModeBanner: false,
+// $themeCode
+// $localizationCode
+//       ${modules.contains('Routing') ? '// Routing configuration\ninitialRoute: \'/\',\nonGenerateRoute: AppRouter.onGenerateRoute,' : '// Set the home page based on selected features\nhome: $homePage,'}
+//     );
+//   }
+// }''';
+// }
+
+// /// Generate a stateful App class for internal state management
+// String _generateStatefulAppClass(
+//     String projectName, String stateManagement, List<dynamic> modules) {
+//   // Get theme initialization code for stateful app
+//   String themeInitCode = modules.contains('Theme Manager')
+//       ? '''
+//   ThemeMode _themeMode = ThemeMode.system;
+  
+//   @override
+//   void initState() {
+//     super.initState();
+//     // Initialize theme from theme manager
+//     _initializeTheme();
+//   }
+  
+//   Future<void> _initializeTheme() async {
+//     await themeManager.initialize();
+//     setState(() {
+//       _themeMode = themeManager.themeMode;
+//     });
+    
+//     // Listen for theme changes
+//     themeManager.addListener(_onThemeChanged);
+//   }
+  
+//   void _onThemeChanged(ThemeModeEnum theme) {
+//     setState(() {
+//       _themeMode = theme.toThemeMode();
+//     });
+//   }
+  
+//   @override
+//   void dispose() {
+//     // Remove theme listener
+//     themeManager.removeListener(_onThemeChanged);
+//     super.dispose();
+//   }'''
+//       : '''
+//   ThemeMode _themeMode = ThemeMode.system;
+  
+//   @override
+//   void initState() {
+//     super.initState();
+//     // No theme manager module, using system default
+//   }''';
+
+//   // Get localization initialization code for stateful app
+//   String localizationInitCode = '';
+//   if (modules.contains('Localization')) {
+//     localizationInitCode = '''
+//   Locale _locale = const Locale('en');
+  
+//   @override
+//   void initState() {
+//     super.initState();
+//     // Initialize locale from saved preference
+//     _initializeLocale();
+//   }
+  
+//   Future<void> _initializeLocale() async {
+//     // Implementation would depend on how you're storing locale preferences
+//     // Example implementation with shared preferences:
+//     // final prefs = await SharedPreferences.getInstance();
+//     // final languageCode = prefs.getString('language_code') ?? 'en';
+//     // setState(() {
+//     //   _locale = Locale(languageCode);
+//     // });
+//   }
+  
+//   void _setLocale(Locale locale) {
+//     setState(() {
+//       _locale = locale;
+//     });
+//     // Save preference
+//     // final prefs = await SharedPreferences.getInstance();
+//     // prefs.setString('language_code', locale.languageCode);
+//   }''';
+//   }
+
+//   // Combine initState methods if both theme and localization are present
+//   if (modules.contains('Theme Manager') && modules.contains('Localization')) {
+//     themeInitCode = themeInitCode.replaceFirst(
+//         '@override\n  void initState() {\n    super.initState();\n    // Initialize theme from theme manager\n    _initializeTheme();\n  }',
+//         '@override\n  void initState() {\n    super.initState();\n    // Initialize theme and locale\n    _initializeTheme();\n    _initializeLocale();\n  }');
+
+//     // Remove duplicate initState from localizationInitCode
+//     localizationInitCode = localizationInitCode.replaceFirst(
+//         '@override\n  void initState() {\n    super.initState();\n    // Initialize locale from saved preference\n    _initializeLocale();\n  }',
+//         '');
+//   }
+
+//   // Build class with appropriate state variables
+//   return '''
+// /// Main App widget with internal state management.
+// ///
+// /// This widget handles theme and localization state internally
+// /// since no external state management solution is used.
+// class App extends StatefulWidget {
+//   /// Creates a new App instance.
+//   const App({Key? key}) : super(key: key);
+
+//   @override
+//   _AppState createState() => _AppState();
+// }
+
+// class _AppState extends State<App> {
+// $themeInitCode
+// $localizationInitCode
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp(
+//       title: '$projectName',
+//       debugShowCheckedModeBanner: false,
+//       ${modules.contains('Theme Manager') ? '// Theme configuration\ntheme: AppTheme.light,\ndarkTheme: AppTheme.dark,\nthemeMode: _themeMode,' : '// Default theme configuration\ntheme: ThemeData.light(useMaterial3: true),\ndarkTheme: ThemeData.dark(useMaterial3: true),\nthemeMode: _themeMode,'}
+//       ${modules.contains('Localization') ? '// Localization configuration\nsupportedLocales: Strings.supportedLocales,\nlocalizationsDelegates: Strings.localizationsDelegates,\nlocale: _locale,' : '// Default localization configuration\nsupportedLocales: const [Locale(\'en\', \'\')],\nlocalizationsDelegates: const [\n  GlobalMaterialLocalizations.delegate,\n  GlobalWidgetsLocalizations.delegate,\n  GlobalCupertinoLocalizations.delegate,\n],'}
+//       ${modules.contains('Routing') ? '// Routing configuration\ninitialRoute: \'/\',\nonGenerateRoute: AppRouter.onGenerateRoute,' : '// Home page\nhome: _buildHomePage(),'}
+//     );
+//   }
+  
+//   Widget _buildHomePage() {
+//     // Determine home page based on features
+//     // This would be dynamically generated based on selected features
+//     return const Scaffold(
+//       body: Center(
+//         child: Text('Welcome to $projectName'),
+//       ),
+//     );
+//   }
+// }''';
+// }
 
 /// Generate app_router.dart file for routing
 void _generateAppRouterFile(HookContext context, String projectName,
@@ -601,7 +1030,7 @@ void _generateAppWidgetFile(HookContext context, String projectName,
       : '';
 
   final localizationImport = modules.contains('Localization')
-      ? "import 'package:$projectName/core/localization/generated/strings.dart';" +
+      ? "import 'package:$projectName/core/localization/generated/app_localizations.dart';" +
           "\nimport 'package:$projectName/core/localization/localization.dart';"
       : '';
 

@@ -64,7 +64,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter/foundation.dart';
+import 'dart:io';
 
 import '../models/push_notification_model.dart';
 import 'local_notification_service.dart';
@@ -91,7 +91,7 @@ class FCMService {
       // Get FCM token with error handling
       String? token = await getToken();
       if (token != null) {
-        debugPrint('FCM Token: \$'token'');
+        debugPrint('FCM Token: \$token');
       } else {
         debugPrint('Failed to get FCM token - notifications may be limited');
       }
@@ -235,17 +235,6 @@ class FCMService {
     }
   }
 
-  /// Check if the app is running on a physical device
-  Future<bool> _isPhysicalDevice() async {
-    try {
-      // This is a simplified check - in production, use a package like 'device_info_plus'
-      // to more accurately determine if the device is physical
-      return !bool.fromEnvironment('dart.vm.product');
-    } catch (e) {
-      return false;
-    }
-  }
-
 
   /// Check if the app is running on a physical device
   Future<bool> _isPhysicalDevice() async {
@@ -333,6 +322,7 @@ void _generateNotificationHandlerFile(HookContext context, String projectName) {
       '$projectName/lib/core/notifications/notification_handler.dart';
   final content = '''
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'models/push_notification_model.dart';
@@ -391,10 +381,6 @@ Future<bool> initialize() async {
     await _fcmService.unsubscribeFromTopic(topic);
   }
   
-  /// Get FCM token
-  Future<String?> getFCMToken() async {
-    return await _fcmService.getToken();
-  }
   
   /// Add listener for notification received
   void addOnNotificationReceivedListener(Function(PushNotificationModel) listener) {

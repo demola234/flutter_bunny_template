@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter_bunny_cli/app_bunny_screen_generator.dart';
 import 'package:flutter_bunny_cli/app_generator.dart';
 import 'package:flutter_bunny_cli/error_generator.dart';
 import 'package:flutter_bunny_cli/localization_generator.dart';
@@ -86,6 +87,8 @@ void run(HookContext context) {
   // Redux specific setup
   generateReduxFiles(context, projectName, stateManagement);
 
+  generateFlutterBunnyScreen(context, projectName, stateManagement, modules);
+
   // Create module structures
   // createModuleStructures(context, projectName, modules, architecture);
 
@@ -100,8 +103,7 @@ void run(HookContext context) {
   generateErrorHandling(context, projectName, architecture);
 
   // Generate localization system if selected
-  generateLocalizationSystem(
-      context, projectName, modules, stateManagement, architecture);
+  generateLocalizationSystem(context, projectName, modules, stateManagement);
 
   context.logger.success('Project structure created successfully!');
 }
