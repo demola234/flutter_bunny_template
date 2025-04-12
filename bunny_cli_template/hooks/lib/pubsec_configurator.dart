@@ -38,7 +38,7 @@ dependencies:
   flutter_secure_storage: ^9.0.0
   cached_network_image: ^3.3.0
   url_launcher: ^6.1.14
-  connectivity_plus: ^6.0.0
+  
   flutter_svg: ^2.0.9
   flutter_dotenv: ^5.1.0
   json_annotation: ^4.8.1

@@ -21,7 +21,8 @@ import 'package:$projectName/core/design_system/theme_extension/theme_manager.da
       : '';
   final localizationImports = hasLocalization
       ? '''
-import 'package:$projectName/core/localization/localization.dart';'''
+import 'package:$projectName/core/localization/localization.dart';
+'''
       : '';
   final pushNotificationImports = hasPushNotification
       ? '''
@@ -87,7 +88,7 @@ class _FlutterBunnyScreenState extends State<FlutterBunnyScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(${hasLocalization ? 'context.strings.notificationSent' : '"Test notification sent"'}),
+        content: Text(${hasLocalization ? 'context.l10n.notificationSent' : '"Test notification sent"'}),
         backgroundColor: ${hasThemeManager ? 'context.theme.colors.activeButton' : 'Colors.blue'},
         behavior: SnackBarBehavior.floating,
       ),
@@ -131,7 +132,7 @@ class _FlutterBunnyScreenState extends State<FlutterBunnyScreen> {
     );
   }
 
-  ${hasThemeManager ? _generateThemeSection(stateManagement) : ''}
+  ${hasThemeManager ? _generateThemeSection(stateManagement, hasLocalization) : ''}
 
   ${hasPushNotification ? _generateNotificationSection(hasThemeManager, hasLocalization) : ''}
 
@@ -156,16 +157,22 @@ import 'package:$projectName/core/localization/bloc/locale_bloc.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';''';
     case 'Provider':
       return '''
-import 'package:provider/provider.dart';''';
+import 'package:provider/provider.dart';
+import 'package:$projectName/core/localization/providers/localization_provider.dart';
+''';
+
     case 'Riverpod':
       return '''
-import 'package:flutter_riverpod/flutter_riverpod.dart';''';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:$projectName/core/localization/providers/locale_provider.dart';
+''';
     case 'GetX':
       return '''
 import 'package:get/get.dart';''';
     case 'MobX':
       return '''
 import 'package:mobx/mobx.dart';
+import 'package:$projectName/core/localization/stores/localization_store.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';''';
     case 'Redux':
       return '''
@@ -177,7 +184,7 @@ import 'package:redux/redux.dart';''';
 }
 
 /// Generates the theme section
-String _generateThemeSection(String stateManagement) {
+String _generateThemeSection(String stateManagement, bool hasLocalization) {
   String themeButton;
   switch (stateManagement) {
     case 'BLoC':
@@ -613,6 +620,12 @@ String _generateThemeSection(String stateManagement) {
   }''';
   }
 
+  // Generate the theme section widget
+  String themeText = hasLocalization ? 'context.l10n.theme' : "'Theme'";
+  String lightText =
+      hasLocalization ? 'context.l10n.lightMode' : "'Light Mode'";
+  String darkText = hasLocalization ? 'context.l10n.darkMode' : "'Dark Mode'";
+
   return '''
   Widget _buildThemeSection() {
     return Column(
@@ -627,7 +640,7 @@ String _generateThemeSection(String stateManagement) {
             ),
             const SizedBox(width: 12),
             Text(
-              context.l10n.theme,
+           $themeText,
               style: context.theme.fonts.headerLarger.copyWith(
                 fontSize: 20,
               ),
@@ -660,13 +673,13 @@ String _generateThemeSection(String stateManagement) {
                 _buildThemeModeButton(
                   ThemeModeEnum.dark,
                   Icons.dark_mode,
-                  context.l10n.darkMode ?? 'Dark Mode',
+                 $lightText,
                 ),
                 const SizedBox(width: 12),
                 _buildThemeModeButton(
                   ThemeModeEnum.system,
                   Icons.brightness_auto,
-                  context.l10n.systemMode,
+                 $darkText,
                 ),
               ],
             ),
@@ -715,7 +728,7 @@ String _generateNotificationSection(
             ),
             const SizedBox(width: 12),
             Text(
-              ${hasLocalization ? 'context.strings.notifications' : "'Notifications'"},
+              ${hasLocalization ? 'context.l10n.notifications' : "'Notifications'"},
               style: $titleStyle,
             ),
           ],
@@ -737,11 +750,11 @@ String _generateNotificationSection(
             children: [
               SwitchListTile(
                 title: Text(
-                  ${hasLocalization ? 'context.strings.enableNotifications' : "'Enable Notifications'"},
+                  ${hasLocalization ? 'context.l10n.enableNotifications' : "'Enable Notifications'"},
                   style: $headerStyle,
                 ),
                 subtitle: Text(
-                  ${hasLocalization ? 'context.strings.receiveNotifications' : "'Receive push notifications'"},
+                  ${hasLocalization ? 'context.l10n.receiveNotifications' : "'Receive push notifications'"},
                   style: $subtitleStyle,
                 ),
                 value: notificationsEnabled,
@@ -763,7 +776,7 @@ String _generateNotificationSection(
                   color: $blueColor,
                 ),
                 title: Text(
-                  ${hasLocalization ? 'context.strings.sendTestNotification' : "'Send Test Notification'"},
+                  ${hasLocalization ? 'context.l10n.sendTestNotification' : "'Send Test Notification'"},
                   style: $headerStyle,
                 ),
                 onTap: _sendTestNotification,
@@ -773,7 +786,7 @@ String _generateNotificationSection(
               // FCM token (collapsible)
               ExpansionTile(
                 title: Text(
-                  ${hasLocalization ? 'context.strings.deviceToken' : "'Device Token'"},
+                  ${hasLocalization ? 'context.l10n.deviceToken' : "'Device Token'"},
                   style: $headerStyle,
                 ),
                 leading: Icon(
@@ -795,11 +808,11 @@ String _generateNotificationSection(
                         ),
                       ),
                       child: SelectableText(
-                        fcmToken ?? ${hasLocalization ? 'context.strings.loading' : "'Loading...'"},
+                        fcmToken ?? ${hasLocalization ? 'context.l10n.loading' : "'Loading...'"},
                         style: TextStyle(
                           fontSize: 12,
                           fontFamily: 'monospace',
-                          color: fcmToken == ${hasLocalization ? 'context.strings.notAvailable' : "'Not available'"}
+                          color: fcmToken == ${hasLocalization ? 'context.l10n.notAvailable' : "'Not available'"}
                               ? ${hasThemeManager ? 'context.theme.colors.iconRed' : 'Colors.red'}
                               : $textColor,
                         ),
@@ -1264,7 +1277,7 @@ String _generateLanguageSection(String stateManagement, bool hasThemeManager) {
             ),
             const SizedBox(width: 12),
             Text(
-              context.strings.language,
+              context.l10n.language,
               style: $titleStyle,
             ),
           ],
@@ -1331,7 +1344,7 @@ String _generateLanguagePickerMethod(
                     ),
                   ),
                   Text(
-                    context.strings.language,
+                    context.l10n.language,
                     style: $titleStyle,
                   ),
                   const SizedBox(height: 20),
@@ -1397,7 +1410,7 @@ String _generateLanguagePickerMethod(
                     ),
                   ),
                   Text(
-                    context.strings.language,
+                    context.l10n.language,
                     style: $titleStyle,
                   ),
                   const SizedBox(height: 20),
@@ -1462,7 +1475,7 @@ String _generateLanguagePickerMethod(
                     ),
                   ),
                   Text(
-                    context.strings.language,
+                    context.l10n.language,
                     style: $titleStyle,
                   ),
                   const SizedBox(height: 20),
@@ -1526,7 +1539,7 @@ String _generateLanguagePickerMethod(
                     ),
                   ),
                   Text(
-                    context.strings.language,
+                    context.l10n.language,
                     style: $titleStyle,
                   ),
                   const SizedBox(height: 20),
@@ -1590,7 +1603,7 @@ String _generateLanguagePickerMethod(
                     ),
                   ),
                   Text(
-                    context.strings.language,
+                    context.l10n.language,
                     style: $titleStyle,
                   ),
                   const SizedBox(height: 20),
@@ -1655,7 +1668,7 @@ String _generateLanguagePickerMethod(
                     ),
                   ),
                   Text(
-                    context.strings.language,
+                    context.l10n.language,
                     style: $titleStyle,
                   ),
                   const SizedBox(height: 20),
@@ -1720,7 +1733,7 @@ String _generateLanguagePickerMethod(
                     ),
                   ),
                   Text(
-                    context.strings.language,
+                    context.l10n.language,
                     style: $titleStyle,
                   ),
                   const SizedBox(height: 20),
@@ -1826,21 +1839,6 @@ void _updateAppDartForNavigation(HookContext context, String projectName) {
 
   String content = appDartFile.readAsStringSync();
   bool modified = false;
-
-  // Add import if not already present
-  if (!content
-      .contains('flutter_bunny/presentation/pages/flutter_bunny_screen.dart')) {
-    final importPattern = RegExp(r'import .*;\n');
-    final lastImportMatch = importPattern.allMatches(content).lastOrNull;
-
-    if (lastImportMatch != null) {
-      final insertPosition = lastImportMatch.end;
-      content = content.substring(0, insertPosition) +
-          "import 'package:$projectName/features/flutter_bunny/presentation/pages/flutter_bunny_screen.dart';\n" +
-          content.substring(insertPosition);
-      modified = true;
-    }
-  }
 
   // Look for different navigation patterns and update accordingly
   if (content.contains('routes: {') && !content.contains("'/flutter_bunny'")) {
@@ -2023,21 +2021,6 @@ void generateFlutterBunnyScreen(HookContext context, String projectName,
     String stateManagement, List<dynamic> modules) {
   context.logger.info('Generating FlutterBunnyScreen for $projectName');
 
-  // Create directories
-  final directories = [
-    'lib/features/flutter_bunny',
-    'lib/features/flutter_bunny/presentation',
-    'lib/features/flutter_bunny/presentation/pages',
-  ];
-
-  for (final dir in directories) {
-    final directory = Directory('$projectName/$dir');
-    if (!directory.existsSync()) {
-      directory.createSync(recursive: true);
-      context.logger.info('Created directory: $dir');
-    }
-  }
-
   // Check which modules are enabled
   final hasThemeManager = modules.contains('Theme Manager');
   final hasLocalization = modules.contains('Localization');
@@ -2133,12 +2116,6 @@ BottomNavigationBar(
 ## Features
 
 ${hasThemeManager ? '- **Theme Manager**: Allows switching between light, dark, and system themes\n' : ''}${hasLocalization ? '- **Localization**: Demonstrates language switching functionality\n' : ''}${hasPushNotification ? '- **Push Notifications**: Shows sending test notifications and viewing device token\n' : ''}
-
-## Customization
-
-You can modify the FlutterBunnyScreen to showcase additional features of your app. The file is located at:
-
-\`lib/features/flutter_bunny/presentation/pages/flutter_bunny_screen.dart\`
 
 ''';
 

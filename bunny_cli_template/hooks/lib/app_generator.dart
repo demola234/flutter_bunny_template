@@ -91,10 +91,10 @@ void _generateAppDartFile(
       break;
     case 'Provider':
       stateManagementImport = "import 'package:provider/provider.dart';\n";
-      if (modules.contains('Theme Manager')) {
-        stateManagementImport +=
-            "import 'package:$projectName/core/design_system/theme_extension/theme_provider.dart';\n";
-      }
+      // if (modules.contains('Theme Manager')) {
+      //   stateManagementImport +=
+      //       "import 'package:$projectName/core/design_system/theme_extension/theme_provider.dart';\n";
+      // }
       if (modules.contains('Localization')) {
         stateManagementImport +=
             "import 'package:$projectName/core/localization/providers/localization_provider.dart';\n";
@@ -103,6 +103,7 @@ void _generateAppDartFile(
     case 'Riverpod':
       stateManagementImport =
           "import 'package:flutter_riverpod/flutter_riverpod.dart';\n";
+      "import 'package:$projectName/core/localization/providers/locale_provider.dart';\n";
       break;
     case 'GetX':
       stateManagementImport = "import 'package:get/get.dart';\n";
@@ -182,8 +183,6 @@ String _generateBlocAppClass(String projectName, List<dynamic> modules) {
     hasLocalization ? 'BlocProvider(create: (_) => LocaleBloc()),' : '',
   ].where((provider) => provider.isNotEmpty).join('\n        ');
 
-
-
   final themeConfig = hasTheme
       ? '''
       theme: AppTheme.light,
@@ -246,7 +245,7 @@ String _generateProviderAppClass(String projectName, List<dynamic> modules) {
       ? '''
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      themeMode: Provider.of<ThemeProvider>(context).themeMode,'''
+      themeMode: Provider.of<ThemeProvider>(context).themeMode.toThemeMode(),'''
       : '''
       theme: ThemeData.light(useMaterial3: true),
       darkTheme: ThemeData.dark(useMaterial3: true),''';
@@ -355,7 +354,7 @@ String _generateGetXAppClass(String projectName, List<dynamic> modules) {
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       locale: Get.find<LocalizationController>().locale,
-      translations: AppTranslations(),'''
+      '''
       : '';
 
   return '''

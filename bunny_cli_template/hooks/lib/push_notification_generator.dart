@@ -49,7 +49,7 @@ void generatePushNotificationSystem(
   _updateMainForNotifications(context, projectName);
 
   // Create a sample notification screen
-  _generateNotificationScreenFile(context, projectName);
+  // _generateNotificationScreenFile(context, projectName);
 
   context.logger.success('Push notification system generated successfully!');
 }

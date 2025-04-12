@@ -69,7 +69,6 @@ void updatePubspecForNetwork(HookContext context, String projectName) {
 
   # Network dependencies
   dio: ^5.3.3
-  connectivity_plus: ^6.0.0
   internet_connection_checker: ^3.0.1
 ''';
       

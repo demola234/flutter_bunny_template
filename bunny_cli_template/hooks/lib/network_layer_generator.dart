@@ -40,7 +40,7 @@ void generateNetworkLayerService(
   _generateAuthInterceptorFile(context, projectName);
   // _generateConnectivityServiceFile(context, projectName);
   _generateApiConstantsFile(context, projectName);
-  _generateNetworkReadmeFile(context, projectName);
+  // _generateNetworkReadmeFile(context, projectName);
   _generateNetworkInfoFile(context, projectName);
 
   // Add a sample API service to showcase how to implement a service
@@ -1046,7 +1046,7 @@ void _updatePubspecForNetwork(HookContext context, String projectName) {
 
   # Network dependencies
   dio: ^5.3.3
-  connectivity_plus: ^6.0.0
+  
   internet_connection_checker: ^3.0.1
 ''';
 
@@ -1094,7 +1094,7 @@ Make sure you have the required dependencies in your `pubspec.yaml`:
 ```yaml
 dependencies:
   dio: ^5.3.3
-  connectivity_plus: ^6.0.0
+  
   internet_connection_checker: ^3.0.1
   freezed_annotation: ^2.4.1
 ```
