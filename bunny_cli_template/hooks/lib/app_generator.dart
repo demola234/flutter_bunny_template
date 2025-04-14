@@ -102,7 +102,6 @@ void _generateAppDartFile(
       break;
     case 'Riverpod':
       stateManagementImport =
-          "import 'package:flutter_riverpod/flutter_riverpod.dart';\n";
       "import 'package:$projectName/core/localization/providers/locale_provider.dart';\n";
       break;
     case 'GetX':

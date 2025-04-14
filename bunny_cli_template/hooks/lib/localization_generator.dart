@@ -114,7 +114,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 /// Extension method to get localized strings easier
 extension LocalizationExtension on BuildContext {
   /// Get the translation strings instance
-  AppLocalizations get l10n => AppLocalizations.of(this)!;
+  AppLocalizations get l10n => AppLocalizations.of(this);
 }
 
 /// Utility methods for localization

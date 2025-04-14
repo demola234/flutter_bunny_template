@@ -30,6 +30,54 @@ import 'package:$projectName/core/notifications/models/push_notification_model.d
 import 'package:$projectName/core/notifications/notification_handler.dart';'''
       : '';
 
+  // Generate class declaration based on state management
+  String classDeclaration;
+  String stateDeclaration;
+
+  if (stateManagement == 'Riverpod') {
+    classDeclaration = '''
+class FlutterBunnyScreen extends ConsumerStatefulWidget {
+  const FlutterBunnyScreen({Key? key}) : super(key: key);
+
+  @override
+  ConsumerState<FlutterBunnyScreen> createState() => _FlutterBunnyScreenState();
+}''';
+
+    stateDeclaration = '''
+class _FlutterBunnyScreenState extends ConsumerState<FlutterBunnyScreen> {''';
+  } else {
+    classDeclaration = '''
+class FlutterBunnyScreen extends StatefulWidget {
+  const FlutterBunnyScreen({Key? key}) : super(key: key);
+
+  @override
+  State<FlutterBunnyScreen> createState() => _FlutterBunnyScreenState();
+}''';
+
+    stateDeclaration = '''
+class _FlutterBunnyScreenState extends State<FlutterBunnyScreen> {''';
+  }
+
+  String languageSectionCall = '';
+
+  if (stateManagement == 'Riverpod') {
+    languageSectionCall = hasLocalization
+        ? '''
+              // Language Section
+              Consumer(
+                builder: (context, ref, _) {
+                  final locale = ref.watch(localeProvider);
+                  return _buildLanguageSection(locale);
+                },
+              ),'''
+        : '';
+  } else {
+    languageSectionCall = hasLocalization
+        ? '// Language Section\n              ' +
+            _generateLanguageSectionCall(stateManagement)
+        : '';
+  }
+
   // Generate content
   final content = '''
 import 'package:flutter/material.dart';
@@ -38,14 +86,11 @@ $themeImports
 $localizationImports
 $pushNotificationImports
 
-class FlutterBunnyScreen extends StatefulWidget {
-  const FlutterBunnyScreen({Key? key}) : super(key: key);
 
-  @override
-  State<FlutterBunnyScreen> createState() => _FlutterBunnyScreenState();
-}
 
-class _FlutterBunnyScreenState extends State<FlutterBunnyScreen> {
+$classDeclaration
+
+$stateDeclaration
   ${hasPushNotification ? '''
   String? fcmToken;
   bool notificationsEnabled = true;
@@ -58,7 +103,8 @@ class _FlutterBunnyScreenState extends State<FlutterBunnyScreen> {
     ${hasPushNotification ? '_loadFCMToken();' : ''}
   }
 
-  ${hasPushNotification ? '''
+
+ ${hasPushNotification ? '''
   Future<void> _loadFCMToken() async {
     try {
       final token = await notificationHandler.getFCMToken();
@@ -77,7 +123,7 @@ class _FlutterBunnyScreenState extends State<FlutterBunnyScreen> {
     }
   }
 
-  void _sendTestNotification() async {
+ void _sendTestNotification() async {
     final notification = PushNotificationModel(
       title: 'Test Notification',
       body: 'This is a test notification from your app',
@@ -96,8 +142,7 @@ class _FlutterBunnyScreenState extends State<FlutterBunnyScreen> {
   }
   ''' : ''}
 
-
-  @override
+ @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ${hasThemeManager ? 'context.theme.colors.surface' : 'Theme.of(context).scaffoldBackgroundColor'},
@@ -124,13 +169,14 @@ class _FlutterBunnyScreenState extends State<FlutterBunnyScreen> {
               
               ${hasPushNotification ? 'const SizedBox(height: 30),' : ''}
 
-              ${hasLocalization ? '// Language Section\n              ' + _generateLanguageSectionCall(stateManagement) : ''}
+              $languageSectionCall
             ],
           ),
         ),
       ),
     );
   }
+
 
   ${hasThemeManager ? _generateThemeSection(stateManagement, hasLocalization) : ''}
 
@@ -621,10 +667,11 @@ String _generateThemeSection(String stateManagement, bool hasLocalization) {
   }
 
   // Generate the theme section widget
-  String themeText = hasLocalization ? 'context.l10n.theme' : "'Theme'";
-  String lightText =
-      hasLocalization ? 'context.l10n.lightMode' : "'Light Mode'";
-  String darkText = hasLocalization ? 'context.l10n.darkMode' : "'Dark Mode'";
+  String themeText = hasLocalization ? 'context.l10n.theme' : 'Theme';
+  String lightText = hasLocalization ? 'context.l10n.lightMode' : 'Light Mode';
+  String darkText = hasLocalization ? 'context.l10n.darkMode' : 'Dark Mode';
+  String systemText =
+      hasLocalization ? 'context.l10n.systemMode' : 'System Mode';
 
   return '''
   Widget _buildThemeSection() {
@@ -667,19 +714,19 @@ String _generateThemeSection(String stateManagement, bool hasLocalization) {
                 _buildThemeModeButton(
                   ThemeModeEnum.light,
                   Icons.light_mode,
-                  context.l10n.lightMode,
+                   $lightText,
                 ),
                 const SizedBox(width: 12),
                 _buildThemeModeButton(
                   ThemeModeEnum.dark,
                   Icons.dark_mode,
-                 $lightText,
+                  $darkText,
                 ),
                 const SizedBox(width: 12),
                 _buildThemeModeButton(
                   ThemeModeEnum.system,
                   Icons.brightness_auto,
-                 $darkText,
+               $systemText,
                 ),
               ],
             ),
@@ -1143,7 +1190,7 @@ String _generateLanguageSection(String stateManagement, bool hasThemeManager) {
         groupValue: currentLocale.languageCode,
         onChanged: (value) {
           if (value != null) {
-            context.read(localeProvider.notifier).setLocale(value);
+            ref.read(localeProvider.notifier).setLocale(value);
           }
         },
         activeColor: $colorStr,
