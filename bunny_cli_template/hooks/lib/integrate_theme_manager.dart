@@ -207,9 +207,9 @@ void _integrateWithRiverpod(HookContext context, String projectName,
 void _integrateWithGetX(HookContext context, String projectName, String content,
     File mainDartFile) {
   // Initialize theme controller in main
-  if (content.contains('void main() async {')) {
+  if (content.contains('WidgetsFlutterBinding.ensureInitialized();')) {
     final mainPosition =
-        content.indexOf('void main() async {') + 'void main() async {'.length;
+        content.indexOf('WidgetsFlutterBinding.ensureInitialized();') + ' WidgetsFlutterBinding.ensureInitialized();'.length;
     content = content.substring(0, mainPosition) +
         "\n  // Initialize theme controller\n  Get.put(ThemeController());" +
         content.substring(mainPosition);

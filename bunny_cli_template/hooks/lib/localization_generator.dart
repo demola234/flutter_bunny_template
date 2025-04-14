@@ -1397,7 +1397,7 @@ void _updateMainForLocalization(
         if (mainFunctionPattern.hasMatch(content)) {
           content = content.replaceFirst(
             mainFunctionPattern,
-            'void main() async {\n  // Initialize localization controller\n  Get.put(LocalizationController());\n',
+            'void main() async {\n  // Initialize localization controller\n  initializeControllers();;\n',
           );
 
           // Also add locale to GetMaterialApp

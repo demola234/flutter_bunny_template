@@ -2,7 +2,27 @@ import 'dart:io';
 
 import 'package:mason/mason.dart';
 
-/// Generates the FlutterBunnyScreen file
+/// Main generator function that calls all the other functions to create a complete FlutterBunnyScreen implementation
+void generateFlutterBunnyScreen(HookContext context, String projectName,
+    String stateManagement, List<dynamic> modules) {
+  context.logger.info('Generating FlutterBunnyScreen for $projectName');
+
+  // Check which modules are enabled
+  final hasThemeManager = modules.contains('Theme Manager');
+  final hasLocalization = modules.contains('Localization');
+  final hasPushNotification = modules.contains('Push Notification');
+
+  // Generate the FlutterBunnyScreen file
+  _generateFlutterBunnyScreenFile(context, projectName, stateManagement,
+      hasThemeManager, hasLocalization, hasPushNotification);
+
+  // Update navigation to include FlutterBunnyScreen
+  _updateNavigationForFlutterBunnyScreen(context, projectName);
+
+  context.logger.success('FlutterBunnyScreen generated successfully!');
+}
+
+/// Generates the FlutterBunnyScreen file with special handling for GetX
 void _generateFlutterBunnyScreenFile(
     HookContext context,
     String projectName,
@@ -11,6 +31,13 @@ void _generateFlutterBunnyScreenFile(
     bool hasLocalization,
     bool hasPushNotification) {
   final filePath = '$projectName/lib/app/app_flutter_bunny.dart';
+
+  // Special case for GetX to use correct imports and controllers
+  if (stateManagement == 'GetX') {
+    _generateGetXFlutterBunnyScreenFile(context, projectName, hasThemeManager,
+        hasLocalization, hasPushNotification);
+    return;
+  }
 
   // Generate imports based on state management and modules
   final stateImports = _generateStateImports(stateManagement, projectName);
@@ -193,6 +220,563 @@ $stateDeclaration
   context.logger.info('Created file: $filePath');
 }
 
+/// Generates the FlutterBunnyScreen file specifically for GetX
+/// Generates the FlutterBunnyScreen file specifically for GetX
+void _generateGetXFlutterBunnyScreenFile(
+    HookContext context,
+    String projectName,
+    bool hasThemeManager,
+    bool hasLocalization,
+    bool hasPushNotification) {
+  final filePath = '$projectName/lib/app/app_flutter_bunny.dart';
+
+  // Generate imports for GetX
+  final baseImports = '''
+import 'package:flutter/material.dart';
+import 'package:get/get_state_manager/src/simple/get_state.dart';
+import 'package:get/instance_manager.dart';
+import 'package:get/route_manager.dart';  // Add this for Get.changeTheme''';
+
+  final themeImports = hasThemeManager
+      ? '''
+import 'package:$projectName/core/design_system/theme_extension/app_theme_extension.dart';
+import 'package:$projectName/core/design_system/theme_extension/theme_controller.dart';'''
+      : '';
+
+  final localizationImports = hasLocalization
+      ? '''
+import 'package:$projectName/core/localization/controllers/localization_controller.dart';
+import 'package:$projectName/core/localization/localization.dart';'''
+      : '';
+
+  final pushNotificationImports = hasPushNotification
+      ? '''
+import 'package:$projectName/core/notifications/models/push_notification_model.dart';
+import 'package:$projectName/core/notifications/notification_handler.dart';'''
+      : '';
+
+  String languageSectionCall = hasLocalization
+      ? '''
+              // Language Section
+              GetBuilder<LocalizationController>(
+                builder: (controller) {
+                  return _buildLanguageSection(controller.locale);
+                },
+              ),'''
+      : '';
+
+  // Generate content
+  final content = '''
+$baseImports
+$themeImports
+$localizationImports
+$pushNotificationImports
+
+class FlutterBunnyScreen extends StatefulWidget {
+  const FlutterBunnyScreen({Key? key}) : super(key: key);
+
+  @override
+  State<FlutterBunnyScreen> createState() => _FlutterBunnyScreenState();
+}
+
+class _FlutterBunnyScreenState extends State<FlutterBunnyScreen> {
+  ${hasPushNotification ? '''
+  String? fcmToken;
+  bool notificationsEnabled = true;
+  bool isTokenExpanded = false;
+  ''' : ''}
+
+  @override
+  void initState() {
+    super.initState();
+    ${hasPushNotification ? '_loadFCMToken();' : ''}
+  }
+
+ ${hasPushNotification ? '''
+  Future<void> _loadFCMToken() async {
+    try {
+      final token = await notificationHandler.getFCMToken();
+      if (mounted) {
+        setState(() {
+          fcmToken = token;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          fcmToken = 'Not available';
+          notificationsEnabled = false;
+        });
+      }
+    }
+  }
+
+ void _sendTestNotification() async {
+    final notification = PushNotificationModel(
+      title: 'Test Notification',
+      body: 'This is a test notification from your app',
+      payload: '{"type": "test", "id": "123"}',
+    );
+
+    await notificationHandler.showLocalNotification(notification);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(${hasLocalization ? 'context.l10n.notificationSent' : '"Test notification sent"'}),
+        backgroundColor: ${hasThemeManager ? 'context.theme.colors.activeButton' : 'Colors.blue'},
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+  ''' : ''}
+
+ @override
+  Widget build(BuildContext context) {
+    return GetBuilder<ThemeController>(
+      builder: (themeController) => Scaffold(
+        backgroundColor: ${hasThemeManager ? 'context.theme.colors.surface' : 'Theme.of(context).scaffoldBackgroundColor'},
+        appBar: AppBar(
+          title: Text(
+            'FlutterBunny',
+            style: ${hasThemeManager ? 'context.theme.fonts.headerLarger.copyWith(fontSize: 20)' : 'Theme.of(context).textTheme.titleLarge'},
+          ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          ${hasLocalization ? '''
+          actions: [
+            GetBuilder<LocalizationController>(
+              builder: (controller) {
+                return TextButton.icon(
+                  onPressed: _showLanguagePicker,
+                  icon: Text(
+                    Localization.getLanguageFlag(controller.locale.languageCode),
+                    style: const TextStyle(fontSize: 20),
+                  ),
+                  label: const Icon(Icons.arrow_drop_down, size: 20),
+                  style: TextButton.styleFrom(),
+                );
+              },
+            ),
+          ],''' : ''}
+        ),
+        body: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ${hasThemeManager ? '// Theme Section\n              _buildThemeSection(),' : ''}
+                
+                ${hasThemeManager ? 'const SizedBox(height: 30),' : ''}
+
+                ${hasPushNotification ? '// Notification Section\n              _buildNotificationSection(),' : ''}
+                
+                ${hasPushNotification ? 'const SizedBox(height: 30),' : ''}
+
+                $languageSectionCall
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  ${hasThemeManager ? '''
+  Widget _buildThemeSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.palette_outlined,
+              color: context.theme.colors.activeButton,
+              size: 26,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              ${hasLocalization ? 'context.l10n.theme' : '"Theme"'},
+              style: context.theme.fonts.headerLarger.copyWith(
+                fontSize: 20,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Container(
+          decoration: BoxDecoration(
+            color: context.theme.colors.surfaceCard,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                _buildThemeModeButton(
+                  ThemeModeEnum.light,
+                  Icons.light_mode,
+                  ${hasLocalization ? 'context.l10n.lightMode' : '"Light Mode"'},
+                ),
+                const SizedBox(width: 12),
+                _buildThemeModeButton(
+                  ThemeModeEnum.dark,
+                  Icons.dark_mode,
+                  ${hasLocalization ? 'context.l10n.darkMode' : '"Dark Mode"'},
+                ),
+                const SizedBox(width: 12),
+                _buildThemeModeButton(
+                  ThemeModeEnum.system,
+                  Icons.brightness_auto,
+                  ${hasLocalization ? 'context.l10n.systemMode' : '"System Mode"'},
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildThemeModeButton(ThemeModeEnum mode, IconData icon, String label) {
+    return GetBuilder<ThemeController>(
+      builder: (controller) {
+        final isSelected = controller.currentTheme == mode;
+        
+        return Expanded(
+          child: GestureDetector(
+            onTap: () {
+              // Set the theme mode and force UI update
+              Get.find<ThemeController>().setThemeMode(mode);
+              
+              // Add this to ensure the theme changes immediately
+              if (mode == ThemeModeEnum.dark) {
+                Get.changeTheme(AppTheme.dark);
+              } else if (mode == ThemeModeEnum.light) {
+                Get.changeTheme(AppTheme.light);
+              } else {
+                // System mode - check the system brightness
+                final brightness = MediaQuery.of(context).platformBrightness;
+                final isDark = brightness == Brightness.dark;
+                Get.changeTheme(isDark ? AppTheme.dark : AppTheme.light);
+              }
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? context.theme.colors.activeButton
+                    : context.theme.colors.surface,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: context.theme.colors.activeButton.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    icon,
+                    color: isSelected
+                        ? context.theme.colors.textWhite
+                        : context.theme.colors.textPrimary,
+                    size: 28,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: isSelected
+                          ? context.theme.colors.textWhite
+                          : context.theme.colors.textPrimary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+    );
+  }''' : ''}
+
+  ${hasPushNotification ? '''
+  Widget _buildNotificationSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.notifications_outlined,
+              color: ${hasThemeManager ? 'context.theme.colors.activeButton' : 'Colors.blue'},
+              size: 26,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              ${hasLocalization ? 'context.l10n.notifications' : '"Notifications"'},
+              style: ${hasThemeManager ? 'context.theme.fonts.headerLarger.copyWith(fontSize: 20)' : 'Theme.of(context).textTheme.titleLarge'},
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Container(
+          decoration: BoxDecoration(
+            color: ${hasThemeManager ? 'context.theme.colors.surfaceCard' : 'Colors.grey[200]'},
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              SwitchListTile(
+                title: Text(
+                  ${hasLocalization ? 'context.l10n.enableNotifications' : '"Enable Notifications"'},
+                  style: ${hasThemeManager ? 'context.theme.fonts.headerSmall' : 'Theme.of(context).textTheme.titleMedium'},
+                ),
+                subtitle: Text(
+                  ${hasLocalization ? 'context.l10n.receiveNotifications' : '"Receive push notifications"'},
+                  style: ${hasThemeManager ? 'context.theme.fonts.subHeader' : 'Theme.of(context).textTheme.bodyMedium'},
+                ),
+                value: notificationsEnabled,
+                onChanged: (value) {
+                  setState(() {
+                    notificationsEnabled = value;
+                  });
+                },
+                activeColor: ${hasThemeManager ? 'context.theme.colors.activeButton' : 'Colors.blue'},
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+              ),
+
+              const Divider(height: 1),
+
+              // Test notification button
+              ListTile(
+                leading: Icon(
+                  Icons.send_outlined,
+                  color: ${hasThemeManager ? 'context.theme.colors.iconBlue' : 'Colors.blue'},
+                ),
+                title: Text(
+                  ${hasLocalization ? 'context.l10n.sendTestNotification' : '"Send Test Notification"'},
+                  style: ${hasThemeManager ? 'context.theme.fonts.headerSmall' : 'Theme.of(context).textTheme.titleMedium'},
+                ),
+                onTap: _sendTestNotification,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+              ),
+
+              // FCM token (collapsible)
+              ExpansionTile(
+                title: Text(
+                  ${hasLocalization ? 'context.l10n.deviceToken' : '"Device Token"'},
+                  style: ${hasThemeManager ? 'context.theme.fonts.headerSmall' : 'Theme.of(context).textTheme.titleMedium'},
+                ),
+                leading: Icon(
+                  Icons.vpn_key_outlined,
+                  color: ${hasThemeManager ? 'context.theme.colors.activeButton' : 'Colors.blue'},
+                ),
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: ${hasThemeManager ? 'context.theme.colors.surface' : 'Colors.white'},
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: ${hasThemeManager ? 'context.theme.colors.inactiveButton' : 'Colors.grey'},
+                          width: 1,
+                        ),
+                      ),
+                      child: SelectableText(
+                        fcmToken ?? ${hasLocalization ? 'context.l10n.loading' : '"Loading..."'},
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontFamily: 'monospace',
+                          color: fcmToken == ${hasLocalization ? 'context.l10n.notAvailable' : '"Not available"'}
+                              ? ${hasThemeManager ? 'context.theme.colors.iconRed' : 'Colors.red'}
+                              : ${hasThemeManager ? 'context.theme.colors.textPrimary' : 'Colors.black'},
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }''' : ''}
+
+  ${hasLocalization ? '''
+  Widget _buildLanguageSection(Locale currentLocale) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.language_outlined,
+              color: ${hasThemeManager ? 'context.theme.colors.activeButton' : 'Colors.blue'},
+              size: 26,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              context.l10n.language,
+              style: ${hasThemeManager ? 'context.theme.fonts.headerLarger.copyWith(fontSize: 20)' : 'Theme.of(context).textTheme.titleLarge'},
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Container(
+          decoration: BoxDecoration(
+            color: ${hasThemeManager ? 'context.theme.colors.surfaceCard' : 'Colors.grey[200]'},
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: Localization.supportedLocales.map((locale) {
+              return RadioListTile<String>(
+                title: Row(
+                  children: [
+                    Text(
+                      Localization.getLanguageFlag(locale.languageCode),
+                      style: const TextStyle(fontSize: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      Localization.getLanguageName(locale.languageCode),
+                      style: ${hasThemeManager ? 'context.theme.fonts.headerSmall' : 'Theme.of(context).textTheme.titleMedium'},
+                    ),
+                  ],
+                ),
+                value: locale.languageCode,
+                groupValue: currentLocale.languageCode,
+                onChanged: (value) {
+                  if (value != null) {
+                    Get.find<LocalizationController>().setLocale(value);
+                  }
+                },
+                activeColor: ${hasThemeManager ? 'context.theme.colors.activeButton' : 'Colors.blue'},
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showLanguagePicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: ${hasThemeManager ? 'context.theme.colors.surfaceCard' : 'Colors.grey[200]'},
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return GetBuilder<LocalizationController>(
+          builder: (controller) {
+            return Container(
+              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Text(
+                    context.l10n.language,
+                    style: ${hasThemeManager ? 'context.theme.fonts.headerLarger.copyWith(fontSize: 20)' : 'Theme.of(context).textTheme.titleLarge'},
+                  ),
+                  const SizedBox(height: 20),
+                  ...Localization.supportedLocales.map((locale) {
+                    final isSelected = controller.locale.languageCode == locale.languageCode;
+                    return ListTile(
+                      leading: Container(
+                        width: 40,
+                        height: 40,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? ${hasThemeManager ? 'context.theme.colors.activeButton.withOpacity(0.1)' : 'Colors.blue.withOpacity(0.1)'}
+                              : Colors.transparent,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          Localization.getLanguageFlag(locale.languageCode),
+                          style: const TextStyle(fontSize: 24),
+                        ),
+                      ),
+                      title: Text(
+                        Localization.getLanguageName(locale.languageCode),
+                        style: ${hasThemeManager ? 'context.theme.fonts.headerSmall' : 'Theme.of(context).textTheme.titleMedium'},
+                      ),
+                      trailing: isSelected
+                          ? Icon(
+                              Icons.check_circle,
+                              color: ${hasThemeManager ? 'context.theme.colors.activeButton' : 'Colors.blue'},
+                            )
+                          : null,
+                      onTap: () {
+                        controller.setLocale(locale.languageCode);
+                        Navigator.pop(context);
+                      },
+                    );
+                  }).toList(),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }''' : ''}
+}
+''';
+
+  final file = File(filePath);
+  file.writeAsStringSync(content);
+  context.logger
+      .info('Created GetX-specific FlutterBunnyScreen file: $filePath');
+}
+
 /// Generates imports based on state management
 String _generateStateImports(String stateManagement, String projectName) {
   switch (stateManagement) {
@@ -206,7 +790,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';''';
 import 'package:provider/provider.dart';
 import 'package:$projectName/core/localization/providers/localization_provider.dart';
 ''';
-
     case 'Riverpod':
       return '''
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -214,7 +797,10 @@ import 'package:$projectName/core/localization/providers/locale_provider.dart';
 ''';
     case 'GetX':
       return '''
-import 'package:get/get.dart';''';
+import 'package:get/get_state_manager/src/simple/get_state.dart';
+import 'package:get/instance_manager.dart';
+import 'package:$projectName/core/localization/controllers/localization_controller.dart';
+import 'package:$projectName/core/design_system/theme_extension/theme_manager.dart';''';
     case 'MobX':
       return '''
 import 'package:mobx/mobx.dart';
@@ -231,6 +817,11 @@ import 'package:redux/redux.dart';''';
 
 /// Generates the theme section
 String _generateThemeSection(String stateManagement, bool hasLocalization) {
+  // Skip GetX case as it's handled in the dedicated GetX function
+  if (stateManagement == 'GetX') {
+    return '';
+  }
+
   String themeButton;
   switch (stateManagement) {
     case 'BLoC':
@@ -365,69 +956,6 @@ String _generateThemeSection(String stateManagement, bool hasLocalization) {
           child: GestureDetector(
             onTap: () {
               ref.read(themeProvider.notifier).setThemeMode(mode);
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? context.theme.colors.activeButton
-                    : context.theme.colors.surface,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: context.theme.colors.activeButton.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    icon,
-                    color: isSelected
-                        ? context.theme.colors.textWhite
-                        : context.theme.colors.textPrimary,
-                    size: 28,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: isSelected
-                          ? context.theme.colors.textWhite
-                          : context.theme.colors.textPrimary,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      }
-    );
-  }''';
-      break;
-
-    case 'GetX':
-      themeButton = '''
-  Widget _buildThemeModeButton(ThemeModeEnum mode, IconData icon, String label) {
-    return GetBuilder<ThemeController>(
-      builder: (controller) {
-        final isSelected = controller.currentTheme == mode;
-        
-        return Expanded(
-          child: GestureDetector(
-            onTap: () {
-              controller.setThemeMode(mode);
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 300),
@@ -877,12 +1405,14 @@ String _generateNotificationSection(
 ''';
 }
 
-/// This is a continuation of the Flutter Bunny Screen Generator
-/// Focusing on the language selection functionality and navigation update
-
 /// Generates the language action button for the AppBar
 String _generateLanguageActionButton(
     String stateManagement, bool hasThemeManager) {
+  // Skip GetX case as it's handled in the dedicated GetX function
+  if (stateManagement == 'GetX') {
+    return '';
+  }
+
   final String themeColor =
       hasThemeManager ? 'context.theme.colors.textPrimary' : 'Colors.black';
 
@@ -938,26 +1468,6 @@ String _generateLanguageActionButton(
                 onPressed: _showLanguagePicker,
                 icon: Text(
                   Localization.getLanguageFlag(locale.languageCode),
-                  style: const TextStyle(fontSize: 20),
-                ),
-                label: const Icon(Icons.arrow_drop_down, size: 20),
-                style: TextButton.styleFrom(
-                 
-                ),
-              );
-            },
-          ),
-        ],''';
-
-    case 'GetX':
-      return '''
-        actions: [
-          GetBuilder<LocalizationController>(
-            builder: (controller) {
-              return TextButton.icon(
-                onPressed: _showLanguagePicker,
-                icon: Text(
-                  Localization.getLanguageFlag(controller.locale.languageCode),
                   style: const TextStyle(fontSize: 20),
                 ),
                 label: const Icon(Icons.arrow_drop_down, size: 20),
@@ -1034,6 +1544,15 @@ String _generateLanguageActionButton(
 
 /// Generates the language section call based on state management
 String _generateLanguageSectionCall(String stateManagement) {
+  if (stateManagement == 'GetX') {
+    return '''
+      GetBuilder<LocalizationController>(
+        builder: (controller) {
+          return _buildLanguageSection(controller.locale);
+        },
+      ),''';
+  }
+
   switch (stateManagement) {
     case 'BLoC':
     case 'Bloc':
@@ -1058,14 +1577,6 @@ String _generateLanguageSectionCall(String stateManagement) {
         builder: (context, ref, _) {
           final locale = ref.watch(localeProvider);
           return _buildLanguageSection(locale);
-        },
-      ),''';
-
-    case 'GetX':
-      return '''
-      GetBuilder<LocalizationController>(
-        builder: (controller) {
-          return _buildLanguageSection(controller.locale);
         },
       ),''';
 
@@ -1099,6 +1610,11 @@ String _generateLanguageSectionCall(String stateManagement) {
 
 /// Generates the language section widget
 String _generateLanguageSection(String stateManagement, bool hasThemeManager) {
+  // Skip GetX case as it's handled in the dedicated GetX function
+  if (stateManagement == 'GetX') {
+    return '';
+  }
+
   final surfaceColor =
       hasThemeManager ? 'context.theme.colors.surfaceCard' : 'Colors.grey[200]';
   final titleStyle = hasThemeManager
@@ -1191,34 +1707,6 @@ String _generateLanguageSection(String stateManagement, bool hasThemeManager) {
         onChanged: (value) {
           if (value != null) {
             ref.read(localeProvider.notifier).setLocale(value);
-          }
-        },
-        activeColor: $colorStr,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-      );''';
-      break;
-
-    case 'GetX':
-      languageTile = '''
-      return RadioListTile<String>(
-        title: Row(
-          children: [
-            Text(
-              Localization.getLanguageFlag(locale.languageCode),
-              style: const TextStyle(fontSize: 22),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              Localization.getLanguageName(locale.languageCode),
-              style: $headerStyle,
-            ),
-          ],
-        ),
-        value: locale.languageCode,
-        groupValue: currentLocale.languageCode,
-        onChanged: (value) {
-          if (value != null) {
-            Get.find<LocalizationController>().setLocale(value);
           }
         },
         activeColor: $colorStr,
@@ -1357,6 +1845,11 @@ String _generateLanguageSection(String stateManagement, bool hasThemeManager) {
 /// Generate the language picker bottom sheet
 String _generateLanguagePickerMethod(
     bool hasThemeManager, String stateManagement) {
+  // Skip GetX case as it's handled in the dedicated GetX function
+  if (stateManagement == 'GetX') {
+    return '';
+  }
+
   final surfaceColor =
       hasThemeManager ? 'context.theme.colors.surfaceCard' : 'Colors.grey[200]';
   final titleStyle = hasThemeManager
@@ -1556,70 +2049,6 @@ String _generateLanguagePickerMethod(
                           : null,
                       onTap: () {
                         ref.read(localeProvider.notifier).setLocale(locale.languageCode);
-                        Navigator.pop(context);
-                      },
-                    );
-                  }).toList(),
-                ],
-              ),
-            );
-          },
-        );''';
-      break;
-
-    case 'GetX':
-      languageListTiles = '''
-        return GetBuilder<LocalizationController>(
-          builder: (controller) {
-            return Container(
-              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 20),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  Text(
-                    context.l10n.language,
-                    style: $titleStyle,
-                  ),
-                  const SizedBox(height: 20),
-                  ...Localization.supportedLocales.map((locale) {
-                    final isSelected = controller.locale.languageCode == locale.languageCode;
-                    return ListTile(
-                      leading: Container(
-                        width: 40,
-                        height: 40,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? $colorStr.withOpacity(0.1)
-                              : Colors.transparent,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Text(
-                          Localization.getLanguageFlag(locale.languageCode),
-                          style: const TextStyle(fontSize: 24),
-                        ),
-                      ),
-                      title: Text(
-                        Localization.getLanguageName(locale.languageCode),
-                        style: $headerStyle,
-                      ),
-                      trailing: isSelected
-                          ? Icon(
-                              Icons.check_circle,
-                              color: $colorStr,
-                            )
-                          : null,
-                      onTap: () {
-                        controller.setLocale(locale.languageCode);
                         Navigator.pop(context);
                       },
                     );
@@ -2061,118 +2490,4 @@ class RouteConstants {
       }
     }
   }
-}
-
-/// Main generator function that calls all the other functions to create a complete FlutterBunnyScreen implementation
-void generateFlutterBunnyScreen(HookContext context, String projectName,
-    String stateManagement, List<dynamic> modules) {
-  context.logger.info('Generating FlutterBunnyScreen for $projectName');
-
-  // Check which modules are enabled
-  final hasThemeManager = modules.contains('Theme Manager');
-  final hasLocalization = modules.contains('Localization');
-  final hasPushNotification = modules.contains('Push Notification');
-
-  // Generate the FlutterBunnyScreen file
-  _generateFlutterBunnyScreenFile(context, projectName, stateManagement,
-      hasThemeManager, hasLocalization, hasPushNotification);
-
-  // Update navigation to include FlutterBunnyScreen
-  _updateNavigationForFlutterBunnyScreen(context, projectName);
-
-  // Generate a README.md with documentation if a drawer needs to be added manually
-  // _generateReadmeFile(context, projectName, hasThemeManager, hasLocalization,
-  //     hasPushNotification);
-
-  context.logger.success('FlutterBunnyScreen generated successfully!');
-}
-
-/// Generate a README.md file with documentation
-void _generateReadmeFile(HookContext context, String projectName,
-    bool hasThemeManager, bool hasLocalization, bool hasPushNotification) {
-  final filePath = '$projectName/README_FLUTTER_BUNNY.md';
-
-  final enabledModules = <String>[];
-  if (hasThemeManager) enabledModules.add('Theme Manager');
-  if (hasLocalization) enabledModules.add('Localization');
-  if (hasPushNotification) enabledModules.add('Push Notification');
-
-  final modulesText = enabledModules.isEmpty
-      ? 'No modules are enabled.'
-      : 'The following modules are enabled:\n' +
-          enabledModules.map((m) => '- $m').join('\n');
-
-  final content = '''# FlutterBunny Screen
-
-This is a showcase screen that demonstrates the capabilities of your Flutter app, focusing on the modules you've selected during project generation.
-
-## Enabled Modules
-
-$modulesText
-
-## How to Access
-
-The FlutterBunnyScreen is registered at the route `/flutter_bunny`. You can navigate to it using:
-
-```dart
-Navigator.of(context).pushNamed('/flutter_bunny');
-```
-
-### Adding to Drawer or Bottom Navigation
-
-If your app uses a drawer or bottom navigation bar, you can add the FlutterBunnyScreen as follows:
-
-#### Drawer Example
-
-```dart
-Drawer(
-  child: ListView(
-    children: [
-      // Other drawer items...
-      ListTile(
-        leading: Icon(Icons.pets),
-        title: Text('Flutter Bunny'),
-        onTap: () {
-          Navigator.of(context).pushNamed('/flutter_bunny');
-        },
-      ),
-    ],
-  ),
-)
-```
-
-#### Bottom Navigation Example
-
-```dart
-BottomNavigationBar(
-  items: [
-    // Other items...
-    BottomNavigationBarItem(
-      icon: Icon(Icons.pets),
-      label: 'Flutter Bunny',
-    ),
-  ],
-  onTap: (index) {
-    if (index == /* your index */) {
-      Navigator.of(context).pushNamed('/flutter_bunny');
-    }
-  },
-)
-```
-
-## Features
-
-${hasThemeManager ? '- **Theme Manager**: Allows switching between light, dark, and system themes\n' : ''}${hasLocalization ? '- **Localization**: Demonstrates language switching functionality\n' : ''}${hasPushNotification ? '- **Push Notifications**: Shows sending test notifications and viewing device token\n' : ''}
-
-''';
-
-  final file = File(filePath);
-  file.writeAsStringSync(content);
-  context.logger.info('Created documentation file: $filePath');
-}
-
-/// Main function for testing
-void main(List<String> args) {
-  // This is a placeholder main method
-  print('Mason pre-generation hook for Flutter Bunny Screen');
 }

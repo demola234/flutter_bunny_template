@@ -42,7 +42,6 @@ void generateAppWidget(
 }
 
 /// Generate the main app.dart file
-/// Generate the main app.dart file
 void _generateAppDartFile(
     HookContext context,
     String projectName,
@@ -57,6 +56,16 @@ void _generateAppDartFile(
     return;
   }
 
+  // For GetX architecture, just call the improved GetX generator
+  if (stateManagement == 'GetX') {
+    final content = _generateGetXAppClass(projectName, modules);
+    final file = File(filePath);
+    file.writeAsStringSync(content);
+    context.logger.info('Created file: $filePath');
+    return;
+  }
+
+  // The rest of the original function for other state management options
   // Determine imports based on modules and features
   final themeImport = modules.contains('Theme Manager')
       ? "import 'package:$projectName/core/design_system/theme_extension/app_theme_extension.dart';\n" +
@@ -80,10 +89,6 @@ void _generateAppDartFile(
     case 'BLoC':
       stateManagementImport =
           "import 'package:flutter_bloc/flutter_bloc.dart';\n";
-      // if (modules.contains('Theme Manager')) {
-      //   stateManagementImport +=
-      //       "import 'package:$projectName/core/design_system/theme_extension/theme_cubit.dart';\n";
-      // }
       if (modules.contains('Localization')) {
         stateManagementImport +=
             "import 'package:$projectName/core/localization/bloc/locale_bloc.dart';\n";
@@ -91,10 +96,6 @@ void _generateAppDartFile(
       break;
     case 'Provider':
       stateManagementImport = "import 'package:provider/provider.dart';\n";
-      // if (modules.contains('Theme Manager')) {
-      //   stateManagementImport +=
-      //       "import 'package:$projectName/core/design_system/theme_extension/theme_provider.dart';\n";
-      // }
       if (modules.contains('Localization')) {
         stateManagementImport +=
             "import 'package:$projectName/core/localization/providers/localization_provider.dart';\n";
@@ -102,11 +103,9 @@ void _generateAppDartFile(
       break;
     case 'Riverpod':
       stateManagementImport =
-      "import 'package:$projectName/core/localization/providers/locale_provider.dart';\n";
+          "import 'package:$projectName/core/localization/providers/locale_provider.dart';\n";
       break;
-    case 'GetX':
-      stateManagementImport = "import 'package:get/get.dart';\n";
-      break;
+    // GetX is handled separately above
     case 'MobX':
       stateManagementImport =
           "import 'package:flutter_mobx/flutter_mobx.dart';\nimport 'package:mobx/mobx.dart';\n";
@@ -136,12 +135,7 @@ void _generateAppDartFile(
     case 'Riverpod':
       appClass = _generateRiverpodAppClass(projectName, modules);
       break;
-    case 'GetX':
-      appClass = _generateGetXAppClass(projectName, modules);
-      appInitInMain = "// Initialize GetX controllers\n" +
-          "${modules.contains('Theme Manager') ? "Get.put(ThemeController());\n" : ""}" +
-          "${modules.contains('Localization') ? "Get.put(LocalizationController());\n" : ""}";
-      break;
+    // GetX is handled separately above
     case 'MobX':
       appClass = _generateMobXAppClass(projectName, modules);
       break;
@@ -334,10 +328,26 @@ $localizationConfig
 }
 
 /// Generate GetX implementation of App
+/// Generate GetX implementation of App
 String _generateGetXAppClass(String projectName, List<dynamic> modules) {
   final hasTheme = modules.contains('Theme Manager');
   final hasLocalization = modules.contains('Localization');
   final hasPushNotification = modules.contains('Push Notification');
+
+  // Correct imports for GetX
+  final themeImport = hasTheme
+      ? "import 'package:$projectName/core/design_system/theme_extension/app_theme_extension.dart';\n" +
+          "import 'package:$projectName/core/design_system/theme_extension/theme_manager.dart';\n"
+      : '';
+
+  final localizationImport = hasLocalization
+      ? "import 'package:$projectName/core/localization/controllers/localization_controller.dart';\n" +
+          "import 'package:$projectName/core/localization/generated/app_localizations.dart';\n"
+      : '';
+
+  final pushNotificationImport = hasPushNotification
+      ? "import 'package:$projectName/core/notifications/notification_handler.dart';\n"
+      : '';
 
   final themeConfig = hasTheme
       ? '''
@@ -356,7 +366,21 @@ String _generateGetXAppClass(String projectName, List<dynamic> modules) {
       '''
       : '';
 
+  final initializeControllers = '''
+// Main app initialization block for main.dart
+/// Initialize GetX controllers before running the app
+void initializeControllers() {
+  ${hasTheme ? "// Register theme controller\n  if (!Get.isRegistered<ThemeController>()) {\n    Get.put(ThemeController());\n  }\n" : ""}  
+  ${hasLocalization ? "// Register localization controller\n  if (!Get.isRegistered<LocalizationController>()) {\n    Get.put(LocalizationController());\n  }\n" : ""}
+}
+''';
+
   return '''
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+$themeImport$localizationImport$pushNotificationImport
+import 'package:$projectName/app/app_flutter_bunny.dart';
+
 /// Main App widget that configures the application using GetX.
 class App extends StatelessWidget {
   /// Creates a new App instance.
@@ -373,6 +397,8 @@ $localizationConfig
     );
   }
 }
+
+$initializeControllers
 ''';
 }
 
@@ -710,6 +736,11 @@ void _generateAppWidgetFile(HookContext context, String projectName,
           "\nimport 'package:$projectName/core/localization/localization.dart';"
       : '';
 
+  if (stateManagement == 'GetX') {
+    _generateGetXAppWidgetFile(context, projectName, modules);
+    return;
+  }
+
   // Add state management imports
   String stateManagementImport = '';
   if (stateManagement == 'Provider') {
@@ -720,7 +751,7 @@ void _generateAppWidgetFile(HookContext context, String projectName,
     stateManagementImport =
         "import 'package:flutter_riverpod/flutter_riverpod.dart';";
   } else if (stateManagement == 'GetX') {
-    stateManagementImport = "import 'package:get/get.dart';";
+    // stateManagementImport = "import 'package:get/get.dart';";
   } else if (stateManagement == 'MobX') {
     stateManagementImport = "import 'package:flutter_mobx/flutter_mobx.dart';";
   } else if (stateManagement == 'Redux') {
@@ -1006,6 +1037,61 @@ class _AppWidgetState extends State<AppWidget> {
 }
 ''';
   }
+
+  final file = File(filePath);
+  file.writeAsStringSync(content);
+  context.logger.info('Created file: $filePath');
+}
+
+/// Generate GetX implementation for app_widget.dart with Feature-Driven architecture
+void _generateGetXAppWidgetFile(
+    HookContext context, String projectName, List<dynamic> modules) {
+  final filePath = '$projectName/lib/app/app_widget.dart';
+
+  final hasTheme = modules.contains('Theme Manager');
+  final hasLocalization = modules.contains('Localization');
+
+  // Correct imports for GetX
+  final themeImport = hasTheme
+      ? "import 'package:$projectName/core/design_system/theme_extension/app_theme_extension.dart';\n" +
+          "import 'package:$projectName/core/design_system/theme_extension/theme_manager.dart';\n"
+      : '';
+
+  final localizationImport = hasLocalization
+      ? "import 'package:$projectName/core/localization/controllers/localization_controller.dart';\n" +
+          "import 'package:$projectName/core/localization/generated/app_localizations.dart';\n" +
+          "import 'package:flutter_localizations/flutter_localizations.dart';\n"
+      : '';
+
+  final content = '''
+import 'package:flutter/material.dart';
+import 'package:flutter_modular/flutter_modular.dart';
+import 'package:get/get.dart';
+$themeImport$localizationImport
+
+/// Main app widget for Feature-Driven architecture that works with Modular and GetX
+class AppWidget extends StatelessWidget {
+  /// Creates a new AppWidget instance
+  const AppWidget({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // Initialize GetX controllers if they haven't been initialized yet
+    ${hasTheme ? 'if (!Get.isRegistered<ThemeController>()) {\n      Get.put(ThemeController());\n    }' : ''}
+    ${hasLocalization ? 'if (!Get.isRegistered<LocalizationController>()) {\n      Get.put(LocalizationController());\n    }' : ''}
+    
+    return GetMaterialApp.router(
+      title: '$projectName',
+      debugShowCheckedModeBanner: false,
+      ${hasTheme ? '// Theme configuration\ntheme: AppTheme.light,\ndarkTheme: AppTheme.dark,\nthemeMode: Get.find<ThemeController>().themeMode,' : '// Default theme configuration\ntheme: ThemeData.light(useMaterial3: true),\ndarkTheme: ThemeData.dark(useMaterial3: true),'}
+      ${hasLocalization ? '// Localization configuration\nsupportedLocales: AppLocalizations.supportedLocales,\nlocalizationsDelegates: AppLocalizations.localizationsDelegates,\nlocale: Get.find<LocalizationController>().locale,' : '// Default localization configuration\nsupportedLocales: const [Locale(\'en\', \'\')],\nlocalizationsDelegates: const [\n  GlobalMaterialLocalizations.delegate,\n  GlobalWidgetsLocalizations.delegate,\n  GlobalCupertinoLocalizations.delegate,\n],'}
+      // Routing delegated to Modular
+      routeInformationParser: Modular.routeInformationParser,
+      routerDelegate: Modular.routerDelegate,
+    );
+  }
+}
+''';
 
   final file = File(filePath);
   file.writeAsStringSync(content);
