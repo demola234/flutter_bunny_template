@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "{{application_id_android}}"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "28"
 
      compileSdkVersion 35
 

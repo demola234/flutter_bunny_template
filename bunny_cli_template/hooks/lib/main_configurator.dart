@@ -143,21 +143,13 @@ void main() async {
     if (stateManagement == 'Provider') {
       mainContent += '''
   runApp(
-    MultiProvider(
-      providers: [
-        // Add your providers here
-        // ChangeNotifierProvider(create: (_) => YourProvider()),
-      ],
-      child: const App(),
-    ),
-  );
+     const App(),
+    );
 ''';
     } else if (stateManagement == 'Riverpod') {
       mainContent += '''
   runApp(
-    const ProviderScope(
-      child: App(),
-    ),
+     App(),
   );
 ''';
     } else if (stateManagement == 'GetX') {
@@ -167,13 +159,7 @@ void main() async {
     } else if (stateManagement == 'Bloc') {
       mainContent += '''
   runApp(
-    MultiBlocProvider(
-      providers: [
-        // Add your BLoCs here
-        // BlocProvider(create: (_) => YourBloc()),
-      ],
-      child: const App(),
-    ),
+   const App(),
   );
 ''';
     } else if (stateManagement == 'MobX') {

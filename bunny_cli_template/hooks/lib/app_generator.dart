@@ -848,6 +848,7 @@ class AppWidget extends StatelessWidget {
     content = '''
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 $stateManagementImport
 $themeImport
