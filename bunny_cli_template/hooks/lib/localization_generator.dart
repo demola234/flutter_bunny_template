@@ -27,7 +27,7 @@ void generateLocalizationSystem(HookContext context, String projectName,
   _updatePubspecForLocalization(context, projectName);
 
   // Update main.dart to initialize localization
-  _updateMainForLocalization(context, projectName, stateManagement);
+  // _updateMainForLocalization(context, projectName, stateManagement);
 
   context.logger.success('Localization system generated successfully!');
 }

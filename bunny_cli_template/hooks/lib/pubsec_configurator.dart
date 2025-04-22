@@ -103,24 +103,7 @@ dependencies:
   } else if (architecture == 'Feature-Driven') {
     pubspecContent += '''
   # Feature-Driven Architecture dependencies
-  go_router: ^12.1.1
   flutter_modular: ^6.3.2
-''';
-  }
-
-  if (features.contains('User Profile')) {
-    pubspecContent += '''
-  # User Profile dependencies
-  image_picker: ^1.0.4
-  image_cropper: ^5.0.1
-''';
-  }
-
-  if (features.contains('Products')) {
-    pubspecContent += '''
-  # Products feature dependencies
-  carousel_slider: ^4.2.1
-  infinite_scroll_pagination: ^4.0.0
 ''';
   }
 

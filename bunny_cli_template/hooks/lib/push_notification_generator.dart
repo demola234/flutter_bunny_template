@@ -813,10 +813,10 @@ void _configureNotificationsForPlatforms(
   // Update iOS Info.plist
   _updateIOSInfoPlist(context, projectName);
   // Update Android manifest
-  _updateAndroidManifest(context, projectName);
+  // _updateAndroidManifest(context, projectName);
 
   // Update iOS AppDelegate
-  _updateIOSAppDelegate(context, projectName);
+  // _updateIOSAppDelegate(context, projectName);
 
   // Add NSUserTrackingUsageDescription to Info.plist (already handled in _generateInfoPlistFile)
   context.logger.success('Configured push notifications for both platforms');

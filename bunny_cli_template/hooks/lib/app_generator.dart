@@ -102,8 +102,10 @@ void _generateAppDartFile(
       }
       break;
     case 'Riverpod':
-      stateManagementImport =
-          "import 'package:$projectName/core/localization/providers/locale_provider.dart';\n";
+      stateManagementImport = "import 'package:flutter_riverpod/flutter_riverpod.dart';\n";
+      if (modules.contains('Localization')) {
+        stateManagementImport += "import 'package:$projectName/core/localization/providers/locale_provider.dart';\n";
+      }
       break;
     // GetX is handled separately above
     case 'MobX':
