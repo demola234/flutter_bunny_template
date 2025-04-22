@@ -175,7 +175,7 @@ $stateDeclaration
       backgroundColor: ${hasThemeManager ? 'context.theme.colors.surface' : 'Theme.of(context).scaffoldBackgroundColor'},
       appBar: AppBar(
         title: Text(
-          '${projectName}',
+          '${projectName.titleCase}',
           style: ${hasThemeManager ? 'context.theme.fonts.headerLarger.copyWith(fontSize: 20)' : 'Theme.of(context).textTheme.titleLarge'},
         ),
         backgroundColor: Colors.transparent,
